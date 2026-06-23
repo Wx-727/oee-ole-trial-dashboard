@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Stage 2 Trial Run OEE and OLE{% endblock %}
+{% block page_id %}oee-ole-analysis-trial{% endblock %}
+{% block nav_trial_run %}is-active{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="eyebrow">OEE and OLE Analysis</p>
+        <h2>Stage 2 Trial Run</h2>
+        <p class="card__helper">Historical OEE and OLE review for the 25–28 March 2026 trial dataset using the imported HR, LR, MR, and production summary workbooks.</p>
+    </div>
+    <div class="trial-run-toggle-row">
+        <a class="trial-run-btn is-live is-active" href="{{ url_for('trial_run') }}">Trial Run Overview</a>
+        <a class="trial-run-btn" href="{{ url_for('trial_stages') }}">Trial Stage View</a>
+    </div>
+</section>
+
+<section class="tr-context-banner" id="trialOeeBanner">
+    <div>
+        <p class="eyebrow">Historical View</p>
+        <h2 class="tr-context-banner__title">Assembly-led OEE/OLE review with cross-stage context</h2>
+        <p class="card__helper">This page focuses on the March trial run. Assembly has the strongest OEE/OLE coverage. Food Prep, Cooking, and Packing are shown as operational context from the same workbook set.</p>
+    </div>
+    <div class="tr-context-banner__meta">
+        <span class="status-pill status-pill--amber">Historical</span>
+        <span class="status-note">Quality assumed 100% where reject counts were not captured</span>
+    </div>
+</section>
+
+<section class="card-grid card-grid--kpi" id="trialOeeSummary"></section>
+
+<section class="oee-analysis-grid">
+    <article class="card" id="trialOeeAssemblyCard"></article>
+    <article class="card" id="trialOeePackingCard"></article>
+</section>
+
+<article class="card" id="trialOeeQualityCard"></article>
+
+<article class="card" id="trialOeeRiskCard"></article>
+
+<article class="card" id="trialOeeLineCard"></article>
+
+<article class="card" id="trialOeeFlowCard"></article>
+
+<article class="card" id="trialOeeGapsCard"></article>
+
+<script src="{{ url_for('static', filename='js/oee_ole_trial_page.js') }}?v=10"></script>
+{% endblock %}

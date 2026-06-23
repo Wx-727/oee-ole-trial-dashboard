@@ -1,0 +1,1022 @@
+{
+  "meta": {
+    "title": "Stage 2 Trial Run OEE and OLE Report",
+    "date_range": "25-28 Mar 2026",
+    "source_file": "SFST_Stage2_OEE_OLE_ProductionFlow.xlsx",
+    "note": "Assembly OEE is the strongest measured stage. Packing OLE is partial because no standard packing productivity exists."
+  },
+  "assembly": {
+    "warning": "25 Mar timing data was not recorded in the source file, so Availability and Performance cannot be calculated for that day.",
+    "rows": [
+      {
+        "date": "25 Mar",
+        "menu": "Baked Pasta, Chicken Tomato Ragout (MU)",
+        "lot": "082",
+        "plan_tray_min": 40,
+        "ordered": 3000,
+        "plan_window_min": 75,
+        "actual_tray_min": null,
+        "assembled": 2619,
+        "assembly_time_min": null,
+        "total_window_min": null,
+        "availability": null,
+        "performance": null,
+        "quality": 0.8730,
+        "oee": null,
+        "root_cause": "Timing not recorded; No fryer on Stage 2 (Low risk #1); Steam supply unstable (#7)",
+        "impact": "-381 meals (-12.7%)"
+      },
+      {
+        "date": "25 Mar",
+        "menu": "Chicken Ragout with Pasta, Mushroom Cream Sauce",
+        "lot": "083",
+        "plan_tray_min": 50,
+        "ordered": 9000,
+        "plan_window_min": 180,
+        "actual_tray_min": null,
+        "assembled": 8802,
+        "assembly_time_min": null,
+        "total_window_min": null,
+        "availability": null,
+        "performance": null,
+        "quality": 0.9780,
+        "oee": null,
+        "root_cause": "Timing not recorded; No fryer on Stage 2 (Low risk #1); Steam supply unstable (#7)",
+        "impact": "-198 meals (-2.2%)"
+      },
+      {
+        "date": "26 Mar",
+        "menu": "Spring Onion Chicken with Noodles",
+        "lot": "083+085",
+        "plan_tray_min": 50,
+        "ordered": 16500,
+        "plan_window_min": 330,
+        "actual_tray_min": 36.2,
+        "assembled": 16491,
+        "assembly_time_min": 455,
+        "total_window_min": 455,
+        "availability": 1.0,
+        "performance": 0.7240,
+        "quality": 0.9995,
+        "oee": 0.7236,
+        "root_cause": "Foil sealer or conveyor unstable (High risk #5); No cold room for staging (Low risk #13)",
+        "impact": "-9 meals (-0.1%)"
+      },
+      {
+        "date": "27 Mar",
+        "menu": "Fish in Oriental Sauce, Short Grain Rice (MU)",
+        "lot": "083",
+        "plan_tray_min": 50,
+        "ordered": 3000,
+        "plan_window_min": 60,
+        "actual_tray_min": 34.4,
+        "assembled": 2750,
+        "assembly_time_min": 80,
+        "total_window_min": 80,
+        "availability": 1.0,
+        "performance": 0.6880,
+        "quality": 0.9167,
+        "oee": 0.6307,
+        "root_cause": "Foil sealer instability (High risk #5); Holding chill room AC cuts out (High risk #11)",
+        "impact": "-250 meals (-8.3%)"
+      },
+      {
+        "date": "27 Mar",
+        "menu": "Ginger Spring Onion Fish, Rice Vermicelli",
+        "lot": "085",
+        "plan_tray_min": 42.9,
+        "ordered": 12750,
+        "plan_window_min": 298,
+        "actual_tray_min": 26.7,
+        "assembled": 12427,
+        "assembly_time_min": 465,
+        "total_window_min": 500,
+        "availability": 0.93,
+        "performance": 0.6224,
+        "quality": 0.9747,
+        "oee": 0.5641,
+        "root_cause": "Spiral freezer temp wait 2hr (Medium risk #4); Waiting for noodle 15 min; Conveyor gap causes tray falls (Medium risk #2)",
+        "impact": "-323 meals (-2.5%)"
+      },
+      {
+        "date": "27 Mar",
+        "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties (Lot.085 B.1)",
+        "lot": "085",
+        "plan_tray_min": 60,
+        "ordered": 1500,
+        "plan_window_min": 25,
+        "actual_tray_min": 30.0,
+        "assembled": 1502,
+        "assembly_time_min": 50,
+        "total_window_min": 170,
+        "availability": 0.2941,
+        "performance": 0.5,
+        "quality": 1.0,
+        "oee": 0.1471,
+        "root_cause": "LR: 2 scrambled egg batches failed CT -> 626.64 kg thrown. HR meals not disposed. Root: Steam box CT failure (High risk #2, #11) and unstable steam supply (Low risk #7).",
+        "impact": "+2 meals; 100 min idle = 59% of total window"
+      },
+      {
+        "date": "28 Mar",
+        "menu": "Spring Onion Chicken with Noodles",
+        "lot": "086",
+        "plan_tray_min": 50,
+        "ordered": 7500,
+        "plan_window_min": 150,
+        "actual_tray_min": 35.0,
+        "assembled": 7170,
+        "assembly_time_min": 205,
+        "total_window_min": 230,
+        "availability": 0.8913,
+        "performance": 0.7,
+        "quality": 0.9560,
+        "oee": 0.5965,
+        "root_cause": "Foil sealer instability (High risk #5); Tray washer capacity (High risk #7)",
+        "impact": "-330 meals (-4.4%)"
+      },
+      {
+        "date": "28 Mar",
+        "menu": "Herb Scrambled Egg, Paprika Potato... (Lot.085 B.2-5 + 086 B.1-2)",
+        "lot": "085+086",
+        "plan_tray_min": 60,
+        "ordered": 15000,
+        "plan_window_min": 350,
+        "actual_tray_min": 40.8,
+        "assembled": 15301,
+        "assembly_time_min": 375,
+        "total_window_min": 455,
+        "availability": 0.8242,
+        "performance": 0.68,
+        "quality": 1.0,
+        "oee": 0.5604,
+        "root_cause": "Bake-down wait 60 min; Setup 20 min; Foil sealer or conveyor unstable (High risk #5)",
+        "impact": "+301 meals; about 18% of window non-productive"
+      }
+    ],
+    "daily_totals": [
+      {
+        "date": "27 Mar",
+        "plan_tray_min": 45.1,
+        "ordered": 17250,
+        "plan_window_min": 383,
+        "actual_tray_min": 28.0,
+        "assembled": 16679,
+        "assembly_time_min": 595,
+        "total_window_min": 750,
+        "availability": 0.7933,
+        "performance": 0.6208,
+        "quality": 0.9669,
+        "oee": 0.4762,
+        "note": "79% of window productive; 15% bakedown/wait; 3% cleaning; 3% setup",
+        "impact": "-571 meals (-3.3%)"
+      },
+      {
+        "date": "28 Mar",
+        "plan_tray_min": 57.0,
+        "ordered": 22500,
+        "plan_window_min": 175,
+        "actual_tray_min": 38.7,
+        "assembled": 22471,
+        "assembly_time_min": 580,
+        "total_window_min": 685,
+        "availability": 0.8467,
+        "performance": 0.6789,
+        "quality": 0.9987,
+        "oee": 0.5741,
+        "note": "85% of window productive; 9% bakedown; 7% setup - best day of trial",
+        "impact": "-29 meals (-0.1%)"
+      }
+    ],
+    "important_note": "28 Mar plan tray/min in the workbook is a weighted average of 50 tray/min for Spring Onion Chicken and 60 tray/min for Herb Scrambled Egg."
+  },
+  "packing": {
+    "note": "No packing standard rate exists in the source documents, so Productivity Ratio and full OLE cannot be completed.",
+    "headcount": [
+      {
+        "date": "26 Mar",
+        "scheduled": 20,
+        "absent": 2,
+        "activated": 18,
+        "activation": 0.9,
+        "source_note": "MR 26-3-26: Leader 2 + Medium 18 = 20 scheduled; Absent 2 -> 18 activated"
+      },
+      {
+        "date": "27 Mar",
+        "scheduled": 20,
+        "absent": 2,
+        "activated": 18,
+        "activation": 0.9,
+        "source_note": "MR 27-3-26: Leader 2 + Medium 18 = 20 scheduled; Absent 2 -> 18 activated"
+      },
+      {
+        "date": "28 Mar",
+        "scheduled": 21,
+        "absent": 0,
+        "activated": 21,
+        "activation": 1.0,
+        "source_note": "MR 28-3-26: Leader 2 + Medium 19 = 21 scheduled; no absences recorded"
+      }
+    ],
+    "utilization": [
+      {
+        "date": "26 Mar",
+        "product": "Chicken Ragout Pasta + Spring Onion Chicken",
+        "start": "~16:35",
+        "stop": "~23:40",
+        "window_min": 425,
+        "productive_time_min": 425,
+        "workers": 18,
+        "man_min_productive": 7650,
+        "man_min_available": 7650,
+        "utilization": 1.0
+      },
+      {
+        "date": "27 Mar",
+        "product": "Fish in Oriental Sauce (Lot.083 Sub01)",
+        "start": "13:00",
+        "stop": "15:40",
+        "window_min": 160,
+        "productive_time_min": 160,
+        "workers": 15,
+        "man_min_productive": 2400,
+        "man_min_available": 2400,
+        "utilization": 1.0
+      },
+      {
+        "date": "27 Mar",
+        "product": "Ginger Spring Onion Fish (Lot.086 Sub01+02)",
+        "start": "13:35",
+        "stop": "21:15",
+        "window_min": 460,
+        "productive_time_min": 445,
+        "workers": 15,
+        "man_min_productive": 6675,
+        "man_min_available": 6900,
+        "utilization": 0.967
+      },
+      {
+        "date": "27 Mar",
+        "product": "Herb Scrambled Egg (Lot.085 Sub01 - skeleton crew)",
+        "start": "23:40",
+        "stop": "00:30",
+        "window_min": 50,
+        "productive_time_min": 50,
+        "workers": 4,
+        "man_min_productive": 200,
+        "man_min_available": 200,
+        "utilization": 1.0
+      },
+      {
+        "date": "28 Mar",
+        "product": "Spring Onion Chicken (Lot.086 Sub01+02)",
+        "start": "11:50",
+        "stop": "15:00",
+        "window_min": 190,
+        "productive_time_min": 190,
+        "workers": 19,
+        "man_min_productive": 3610,
+        "man_min_available": 3610,
+        "utilization": 1.0
+      },
+      {
+        "date": "28 Mar",
+        "product": "Herb Scrambled Egg Lot.085 Sub01",
+        "start": "15:15",
+        "stop": "18:30",
+        "window_min": 195,
+        "productive_time_min": 195,
+        "workers": 15,
+        "man_min_productive": 2925,
+        "man_min_available": 2925,
+        "utilization": 1.0
+      },
+      {
+        "date": "28 Mar",
+        "product": "Herb Scrambled Egg Lot.085 Sub02",
+        "start": "18:30",
+        "stop": "19:10",
+        "window_min": 40,
+        "productive_time_min": 40,
+        "workers": 15,
+        "man_min_productive": 600,
+        "man_min_available": 600,
+        "utilization": 1.0
+      },
+      {
+        "date": "28 Mar",
+        "product": "Herb Scrambled Egg Lot.086 Sub01",
+        "start": "19:10",
+        "stop": "20:20",
+        "window_min": 70,
+        "productive_time_min": 70,
+        "workers": 19,
+        "man_min_productive": 1330,
+        "man_min_available": 1330,
+        "utilization": 1.0
+      },
+      {
+        "date": "28 Mar",
+        "product": "Herb Scrambled Egg Lot.087 Sub01",
+        "start": "20:20",
+        "stop": "22:45",
+        "window_min": 145,
+        "productive_time_min": 145,
+        "workers": 19,
+        "man_min_productive": 2755,
+        "man_min_available": 2755,
+        "utilization": 1.0
+      }
+    ],
+    "productivity": [
+      {
+        "date": "27 Mar",
+        "product": "Fish in Oriental Sauce",
+        "meals_packed": 2750,
+        "man_hours": 40.0,
+        "actual_meals_per_man_hr": 68.8,
+        "standard": null,
+        "ratio_note": "Cannot calculate",
+        "note": "Standard not defined in any source document"
+      },
+      {
+        "date": "27 Mar",
+        "product": "Ginger Spring Onion Fish",
+        "meals_packed": 12437,
+        "man_hours": 111.2,
+        "actual_meals_per_man_hr": 111.8,
+        "standard": null,
+        "ratio_note": "Cannot calculate",
+        "note": "Standard not defined"
+      },
+      {
+        "date": "27 Mar",
+        "product": "Herb Scrambled Egg (skeleton 4w)",
+        "meals_packed": 1506,
+        "man_hours": 3.3,
+        "actual_meals_per_man_hr": 451.8,
+        "standard": null,
+        "ratio_note": "Cannot calculate",
+        "note": "Skeleton crew - not representative"
+      },
+      {
+        "date": "28 Mar",
+        "product": "Spring Onion Chicken",
+        "meals_packed": 7170,
+        "man_hours": 60.2,
+        "actual_meals_per_man_hr": 119.2,
+        "standard": null,
+        "ratio_note": "Cannot calculate",
+        "note": "Standard not defined"
+      },
+      {
+        "date": "28 Mar",
+        "product": "All Herb Scrambled Egg runs",
+        "meals_packed": 15301,
+        "man_hours": 126.8,
+        "actual_meals_per_man_hr": 120.6,
+        "standard": null,
+        "ratio_note": "Cannot calculate",
+        "note": "Standard not defined"
+      }
+    ],
+    "partial_summary": [
+      {
+        "date": "26 Mar",
+        "activation": 0.9,
+        "utilization": 1.0,
+        "partial_ole": 0.9,
+        "full_ole_note": "Cannot complete",
+        "note": "Productivity ratio undefined - no standard packing rate"
+      },
+      {
+        "date": "27 Mar",
+        "activation": 0.9,
+        "utilization": 0.967,
+        "partial_ole": 0.8703,
+        "full_ole_note": "Cannot complete",
+        "note": "Productivity ratio undefined - no standard packing rate"
+      },
+      {
+        "date": "28 Mar",
+        "activation": 1.0,
+        "utilization": 0.977,
+        "partial_ole": 0.977,
+        "full_ole_note": "Cannot complete",
+        "note": "Productivity ratio undefined - no standard packing rate"
+      }
+    ],
+    "gap_note": "To complete the Productivity factor for OLE, SFST needs a standard packing rate (meals/man/hr) for each product type based on time studies."
+  },
+  "quality": {
+    "headline": "Confirmed by SFST: 1,502 assembled meals were not disposed. Only bad scrambled eggs were thrown. Total confirmed LR rejection was 626.64 kg across two failed batches.",
+    "safety_events": [
+      {
+        "stage": "LR Cooking (pre-steam box)",
+        "detail": "Batch 1 - Raw scrambled egg mixture failed core temp check before reaching steam box",
+        "qty_kg": 317.96,
+        "confirmed_status": "CONFIRMED THROWN",
+        "lr_passed_kg": "634.73 kg passed (Egg 384.16 + Bechamel 211.08 + Herb 39.49)",
+        "lr_quality": 0.5032,
+        "hr_meals": "1,502 meals assembled using passing egg batches",
+        "hr_quality": "100% confirmed - assembled meals not disposed",
+        "lr_oee_impact": "LR Quality = 50.3% (634.73 passed / 1,261.37 total attempted)",
+        "hr_oee_impact": "100% unchanged - no HR impact",
+        "root_cause": "High Risk #2 steam cabinet CT not operational; High Risk #11 chill room AC cuts; Low Risk #7 unstable steam supply",
+        "reported": "Seksan Nakphoung 30 Mar, approved by Weisiang Lim 31 Mar"
+      },
+      {
+        "stage": "LR Cooking (post-steam box)",
+        "detail": "Batch 2 - Scrambled egg cooked through steam box but still failed core temp check and had bad smell",
+        "qty_kg": 308.68,
+        "confirmed_status": "CONFIRMED THROWN",
+        "lr_passed_kg": "Same passing base as above",
+        "lr_quality": 0.5032,
+        "hr_meals": null,
+        "hr_quality": null,
+        "lr_oee_impact": null,
+        "hr_oee_impact": null,
+        "root_cause": null,
+        "reported": null
+      }
+    ],
+    "leftovers": [
+      {
+        "date": "26 Mar",
+        "risk_level": "Medium Risk",
+        "menu": "Spring Onion Chicken (16,491 meals)",
+        "component": "Blanched chye sim (SFST50000115)",
+        "leftover_kg": 10.62,
+        "tray_equiv_excess": 2655,
+        "leftover_pct": 0.1610,
+        "affected_stage": "LR Cooking",
+        "status": "THROWN",
+        "impact": "LR material yield loss only; no HR or MR quality impact"
+      },
+      {
+        "date": "26 Mar",
+        "risk_level": "Medium Risk",
+        "menu": "Spring Onion Chicken (16,491 meals)",
+        "component": "Stir Fried vegetable (SFST50000074)",
+        "leftover_kg": 4.19,
+        "tray_equiv_excess": 47,
+        "leftover_pct": 0.0028,
+        "affected_stage": "LR Cooking",
+        "status": "THROWN",
+        "impact": "LR material yield loss only; no HR or MR quality impact"
+      },
+      {
+        "date": "26 Mar",
+        "risk_level": "Medium Risk",
+        "menu": "Spring Onion Chicken (16,491 meals)",
+        "component": "Blanched spring onion (SFST50000131)",
+        "leftover_kg": 7.56,
+        "tray_equiv_excess": 1512,
+        "leftover_pct": 0.0917,
+        "affected_stage": "LR Cooking",
+        "status": "THROWN",
+        "impact": "LR material yield loss only; no HR or MR quality impact"
+      },
+      {
+        "date": "27 Mar",
+        "risk_level": "Low Risk (labeling error confirmed)",
+        "menu": "Fish in Oriental Sauce (2,750 meals)",
+        "component": "Fish sauce - component 1",
+        "leftover_kg": 60.52,
+        "tray_equiv_excess": 252,
+        "leftover_pct": 0.0917,
+        "affected_stage": "LR Cooking",
+        "status": "THROWN",
+        "impact": "LR material yield loss only; no HR or MR quality impact"
+      },
+      {
+        "date": "27 Mar",
+        "risk_level": "Low Risk (labeling error confirmed)",
+        "menu": "Fish in Oriental Sauce (2,750 meals)",
+        "component": "Fish sauce - component 2",
+        "leftover_kg": 126.0,
+        "tray_equiv_excess": 525,
+        "leftover_pct": 0.1909,
+        "affected_stage": "LR Cooking",
+        "status": "THROWN",
+        "impact": "LR material yield loss only; no HR or MR quality impact"
+      },
+      {
+        "date": "27 Mar",
+        "risk_level": "Low Risk (labeling error confirmed)",
+        "menu": "Spring Onion Chicken (label error)",
+        "component": "Spring Onion Chicken components",
+        "leftover_kg": 12.68,
+        "tray_equiv_excess": 38,
+        "leftover_pct": 0.0138,
+        "affected_stage": "LR Cooking",
+        "status": "THROWN",
+        "impact": "LR material yield loss only; no HR or MR quality impact"
+      }
+    ],
+    "leftover_totals": [
+      { "label": "26 Mar subtotal", "leftover_kg": 22.37 },
+      { "label": "27 Mar subtotal", "leftover_kg": 199.20 },
+      { "label": "Grand total leftover", "leftover_kg": 221.57 }
+    ],
+    "quality_factors": [
+      {
+        "date": "25 Mar",
+        "product": "Baked Pasta, Chicken Ragout Pasta",
+        "ordered": 12000,
+        "assembled": 11421,
+        "hr_quality": 0.9518,
+        "lr_quality": null,
+        "chain_quality": null,
+        "basis": "Assembly data only; timing not recorded; no rejection document"
+      },
+      {
+        "date": "26 Mar",
+        "product": "Spring Onion Chicken (16,491 meals)",
+        "ordered": 16500,
+        "assembled": 16491,
+        "hr_quality": 0.9995,
+        "lr_quality": null,
+        "chain_quality": null,
+        "basis": "22.37 kg component leftover thrown - LR yield only; assembly quality unaffected"
+      },
+      {
+        "date": "27 Mar",
+        "product": "Fish in Oriental Sauce (2,750 meals)",
+        "ordered": 3000,
+        "assembled": 2750,
+        "hr_quality": 0.9167,
+        "lr_quality": null,
+        "chain_quality": null,
+        "basis": "199.20 kg sauce leftover thrown - LR yield only; assembly quality unaffected"
+      },
+      {
+        "date": "27 Mar",
+        "product": "Ginger Spring Onion Fish (12,427 meals)",
+        "ordered": 12750,
+        "assembled": 12427,
+        "hr_quality": 0.9747,
+        "lr_quality": null,
+        "chain_quality": null,
+        "basis": "No rejection record"
+      },
+      {
+        "date": "27 Mar",
+        "product": "Herb Scrambled Egg Lot.085 B.1 (1,502 meals)",
+        "ordered": 1500,
+        "assembled": 1502,
+        "hr_quality": 1.0,
+        "lr_quality": 0.5032,
+        "chain_quality": 0.5032,
+        "basis": "LR had 2 failed CT batches -> 626.64 kg thrown -> LR Quality 50.3%. HR meals not disposed -> 100%. Chain Quality = 50.3%."
+      },
+      {
+        "date": "28 Mar",
+        "product": "Spring Onion Chicken Lot.086 (7,170 meals)",
+        "ordered": 7500,
+        "assembled": 7170,
+        "hr_quality": 0.9560,
+        "lr_quality": null,
+        "chain_quality": null,
+        "basis": "No rejection record"
+      },
+      {
+        "date": "28 Mar",
+        "product": "Herb Scrambled Egg 085 B.2-5 + 086 B.1-2 (15,301 meals)",
+        "ordered": 15000,
+        "assembled": 15301,
+        "hr_quality": 1.0,
+        "lr_quality": null,
+        "chain_quality": null,
+        "basis": "No rejection record for 28 Mar run. CT issue was 27 Mar only."
+      }
+    ],
+    "chain_note": "For Herb Scrambled Egg on 27 Mar, assembly quality stayed at 100%, but full chain quality was limited to 50.3% because the LR cooking stage failed core temperature checks."
+  },
+  "risks": [
+    {
+      "risk_level": "HIGH",
+      "issue": "#1",
+      "area": "Steam box",
+      "description": "Drain grate in front of steam cabinet creates a risk of product falling",
+      "oee_factor": "Quality",
+      "ole_factor": "Utilization",
+      "evidence": "Not directly measured - MR damage data is absent"
+    },
+    {
+      "risk_level": "HIGH",
+      "issue": "#3",
+      "area": "Steam box",
+      "description": "No vacuum machines",
+      "oee_factor": "Performance",
+      "ole_factor": "Productivity",
+      "evidence": "Contributes to scrambled egg preparation delay observed on 27 Mar"
+    },
+    {
+      "risk_level": "HIGH",
+      "issue": "#5",
+      "area": "Assembly area",
+      "description": "Foil sealer machine, injector, and conveyor belt unstable",
+      "oee_factor": "Availability",
+      "ole_factor": "Utilization",
+      "evidence": "Likely contributor to sub-50 tray/min on all assembly days"
+    },
+    {
+      "risk_level": "HIGH",
+      "issue": "#7",
+      "area": "Cleaning room",
+      "description": "Tray washer capacity insufficient to keep up",
+      "oee_factor": "Availability",
+      "ole_factor": "Utilization",
+      "evidence": "Downstream constraint affecting start times"
+    },
+    {
+      "risk_level": "HIGH",
+      "issue": "#10",
+      "area": "Production line",
+      "description": "AirBlast freezer WIP storage insufficient",
+      "oee_factor": "Availability",
+      "ole_factor": "Utilization",
+      "evidence": "Spiral freezer temp wait documented on 27 Mar (Ginger Fish)"
+    },
+    {
+      "risk_level": "HIGH",
+      "issue": "#11",
+      "area": "Production line",
+      "description": "Holding chill room AC cuts out so component temperatures are not maintained",
+      "oee_factor": "Quality",
+      "ole_factor": "Utilization",
+      "evidence": "Directly linked to scrambled egg delay on 27 Mar"
+    },
+    {
+      "risk_level": "MEDIUM",
+      "issue": "#2",
+      "area": "Production line",
+      "description": "Conveyor belt discontinuity causes Bento trays to fall",
+      "oee_factor": "Quality",
+      "ole_factor": "Utilization",
+      "evidence": "Likely under-reported because MR reject fields are mostly blank"
+    },
+    {
+      "risk_level": "MEDIUM",
+      "issue": "#4",
+      "area": "Spiral freezer",
+      "description": "Freezer needs 2hr pre-cool, no support staff, CIP takes 1-2hr, only one can run at a time",
+      "oee_factor": "Availability",
+      "ole_factor": "Utilization",
+      "evidence": "Direct cause of Ginger Fish waiting and freezer-related delays on 27 Mar"
+    },
+    {
+      "risk_level": "LOW",
+      "issue": "#1",
+      "area": "Kitchen",
+      "description": "No deep fryer on Stage 2; had to borrow from Stage 1",
+      "oee_factor": "Performance",
+      "ole_factor": "Utilization",
+      "evidence": "IQF potato ran from 09:49-17:00 on 27 Mar before assembly"
+    },
+    {
+      "risk_level": "LOW",
+      "issue": "#6",
+      "area": "Kitchen",
+      "description": "Electric Bratt pan too high and cannot operate",
+      "oee_factor": "Performance",
+      "ole_factor": "Productivity",
+      "evidence": "Mushroom sauce cooking used manual Bratt pan and contributed to bottlenecks"
+    },
+    {
+      "risk_level": "LOW",
+      "issue": "#7",
+      "area": "Kitchen",
+      "description": "Steam supply not stable",
+      "oee_factor": "Availability",
+      "ole_factor": "Utilization",
+      "evidence": "Not directly timestamped but embedded in cooking duration losses"
+    },
+    {
+      "risk_level": "LOW",
+      "issue": "#10",
+      "area": "Kitchen",
+      "description": "No raw vegetable cold storage",
+      "oee_factor": "Quality",
+      "ole_factor": "Utilization",
+      "evidence": "Mushroom cutting had to be done same night as cooking"
+    },
+    {
+      "risk_level": "LOW",
+      "issue": "#12",
+      "area": "Kitchen",
+      "description": "No egg filling machine",
+      "oee_factor": "Performance",
+      "ole_factor": "Productivity",
+      "evidence": "Manual scrambled egg prep became the main bottleneck"
+    },
+    {
+      "risk_level": "LOW",
+      "issue": "#13",
+      "area": "Kitchen",
+      "description": "No cold room for forming chicken patties",
+      "oee_factor": "Performance",
+      "ole_factor": "Quality",
+      "evidence": "Patties formed at ambient temperature and increased variability"
+    }
+  ],
+  "product_flows": [
+    {
+      "product": "Baked Pasta with Chicken Tomato Ragout (MU)",
+      "lots": "082",
+      "lr_tasks": [
+        { "sheet": "N 24 Mar", "task": "Chicken Ragout Sauce - Mushroom prep + cut (5B)", "start": "19:20", "stop": "~01:30(+1)", "duration": "~6h", "workers": "8-10", "output": "195+ kg", "component": "Mushroom (shared with Chicken Ragout)" },
+        { "sheet": "N 24 Mar", "task": "Chicken Ragout Sauce B.1-13 cooking", "start": "02:25", "stop": "05:38", "duration": "~3h 13min", "workers": "4", "output": "~1,826 kg", "component": "Sauce" },
+        { "sheet": "D 25 Mar", "task": "Boiled Fusilli Pasta B.9-11 (6 sub-batches)", "start": "10:19", "stop": "13:59", "duration": "sporadic", "workers": "10", "output": "~234 kg", "component": "Pasta" }
+      ],
+      "hr": {
+        "start": "-",
+        "stop": "-",
+        "assembly_min": null,
+        "wait_idle_min": null,
+        "cleaning_min": null,
+        "setup_min": null,
+        "total_window_min": 75,
+        "meals_assembled": 2619,
+        "plan_tray_min": 40,
+        "actual_tray_min": null,
+        "availability": null,
+        "performance": null,
+        "quality": 0.8730,
+        "oee": null
+      },
+      "mr": [
+        { "date": "25 Mar", "lot": "082", "sub_lot": "01-", "start": "-", "stop": "-", "duration_min": "-", "workers": "-", "meals_packed": 2619, "cartons": "~65", "meals_per_man_hr": "-" }
+      ]
+    },
+    {
+      "product": "Chicken Ragout with Pasta, Mushroom Cream Sauce",
+      "lots": "083",
+      "lr_tasks": [
+        { "sheet": "N 24 Mar", "task": "Chicken Ragout Sauce - Mushroom prep+cut (shared)", "start": "19:20", "stop": "~01:30(+1)", "duration": "~6h", "workers": "8-10", "output": "195+ kg", "component": "Mushroom (shared with Baked Pasta)" },
+        { "sheet": "N 24 Mar", "task": "Chicken Ragout Sauce B.1-13 (shared sauce)", "start": "02:25", "stop": "05:38", "duration": "3h 13min", "workers": "4", "output": "~1,826 kg", "component": "Sauce" },
+        { "sheet": "D 25 Mar", "task": "Boiled Penne Pasta B.1-14 (28 sub-batches)", "start": "14:06", "stop": "16:11", "duration": "~2h 5min", "workers": "10", "output": "~1,042 kg", "component": "Pasta" }
+      ],
+      "hr": {
+        "start": "-",
+        "stop": "-",
+        "assembly_min": null,
+        "wait_idle_min": null,
+        "cleaning_min": null,
+        "setup_min": null,
+        "total_window_min": 180,
+        "meals_assembled": 8802,
+        "plan_tray_min": 50,
+        "actual_tray_min": null,
+        "availability": null,
+        "performance": null,
+        "quality": 0.9780,
+        "oee": null
+      },
+      "mr": [
+        { "date": "26 Mar", "lot": "083", "sub_lot": "02", "start": "16:35", "stop": "18:20", "duration_min": 105, "workers": "-", "meals_packed": 3964, "cartons": "~99", "meals_per_man_hr": "-" },
+        { "date": "26 Mar", "lot": "083", "sub_lot": "03", "start": "19:20", "stop": "21:30", "duration_min": 130, "workers": "-", "meals_packed": 3886, "cartons": "~97", "meals_per_man_hr": "-" },
+        { "date": "26 Mar", "lot": "083", "sub_lot": "04", "start": "21:30", "stop": "21:50", "duration_min": 20, "workers": "-", "meals_packed": 964, "cartons": "~24", "meals_per_man_hr": "-" }
+      ]
+    },
+    {
+      "product": "Spring Onion Chicken with Noodles",
+      "lots": "083+085 (26 Mar) / 086 (28 Mar)",
+      "lr_tasks": [
+        { "sheet": "N 24 Mar", "task": "Noodle Sauce B.1-11", "start": "22:05", "stop": "00:43(+1)", "duration": "~2h 38min", "workers": "4", "output": "~903 kg", "component": "Sauce" },
+        { "sheet": "N 24 Mar", "task": "Stir-Fried + Cooked Chicken B.1-12", "start": "22:57", "stop": "04:04(+1)", "duration": "~5h", "workers": "3-4", "output": "~1,638 kg", "component": "Chicken" },
+        { "sheet": "D 26 Mar", "task": "Stir-Fried noodle B.1-11", "start": "13:42", "stop": "18:44", "duration": "~5h 2min", "workers": "8", "output": "~1,477 kg", "component": "Noodle" },
+        { "sheet": "D 27 Mar", "task": "Blanching veg, stir-fry B.1-4 (for Lot.086)", "start": "09:30", "stop": "18:48", "duration": "~9h", "workers": "1-4", "output": "varies", "component": "Veg for Lot.086" }
+      ],
+      "hr": {
+        "start": "15:05",
+        "stop": "22:40",
+        "assembly_min": 455,
+        "wait_idle_min": 0,
+        "cleaning_min": 0,
+        "setup_min": 0,
+        "total_window_min": 455,
+        "meals_assembled": 16491,
+        "plan_tray_min": 50,
+        "actual_tray_min": 36.2,
+        "availability": 1.0,
+        "performance": 0.7240,
+        "quality": 0.9995,
+        "oee": 0.7236
+      },
+      "mr": [
+        { "date": "26 Mar", "lot": "083", "sub_lot": "01", "start": "17:30", "stop": "19:50", "duration_min": 140, "workers": "-", "meals_packed": 5620, "cartons": "-", "meals_per_man_hr": "-" },
+        { "date": "26 Mar", "lot": "083", "sub_lot": "02", "start": "19:50", "stop": "22:30", "duration_min": 160, "workers": "-", "meals_packed": 6198, "cartons": "-", "meals_per_man_hr": "-" },
+        { "date": "26 Mar", "lot": "083", "sub_lot": "03", "start": "22:30", "stop": "23:40", "duration_min": 70, "workers": "-", "meals_packed": 1477, "cartons": "-", "meals_per_man_hr": "-" },
+        { "date": "26 Mar", "lot": "085", "sub_lot": "04", "start": "22:30", "stop": "00:50(+1)", "duration_min": 140, "workers": "-", "meals_packed": 3208, "cartons": "-", "meals_per_man_hr": "-" },
+        { "date": "28 Mar", "lot": "086", "sub_lot": "01", "start": "11:50", "stop": "14:25", "duration_min": 155, "workers": 19, "meals_packed": 5692, "cartons": 237, "meals_per_man_hr": "-" },
+        { "date": "28 Mar", "lot": "086", "sub_lot": "02", "start": "14:25", "stop": "15:00", "duration_min": 35, "workers": 19, "meals_packed": 1478, "cartons": 61, "meals_per_man_hr": "-" }
+      ]
+    },
+    {
+      "product": "Fish in Oriental Sauce with Short Grain Rice (MU)",
+      "lots": "083",
+      "lr_tasks": [
+        { "sheet": "N 24 Mar", "task": "Spring Onion Ginger Oil (2B)", "start": "20:35", "stop": "21:45", "duration": "~1h 10min", "workers": "1-2", "output": "~5.6 kg", "component": "Garnish" },
+        { "sheet": "N 26 Mar", "task": "Steam Short Grain Rice (6 sub-batches)", "start": "02:28", "stop": "04:04", "duration": "~1h 36min", "workers": "5", "output": "~440 kg", "component": "Rice" },
+        { "sheet": "N 27 Mar", "task": "Fried Fish B.1-8", "start": "20:15", "stop": "05:28(+1)", "duration": "~9h 13min", "workers": "5", "output": "~545 kg", "component": "Fish" }
+      ],
+      "hr": {
+        "start": "21:35",
+        "stop": "22:55",
+        "assembly_min": 80,
+        "wait_idle_min": 0,
+        "cleaning_min": 0,
+        "setup_min": 0,
+        "total_window_min": 80,
+        "meals_assembled": 2750,
+        "plan_tray_min": 50,
+        "actual_tray_min": 34.4,
+        "availability": 1.0,
+        "performance": 0.6880,
+        "quality": 0.9167,
+        "oee": 0.6307
+      },
+      "mr": [
+        { "date": "27 Mar", "lot": "083", "sub_lot": "01", "start": "13:00", "stop": "15:40", "duration_min": 160, "workers": 15, "meals_packed": 2750, "cartons": 100, "meals_per_man_hr": 68.8 }
+      ]
+    },
+    {
+      "product": "Ginger Spring Onion Fish with Rice Vermicelli",
+      "lots": "085+086",
+      "lr_tasks": [
+        { "sheet": "N 25 Mar", "task": "Fried Fish B.1-7 (first run)", "start": "19:59", "stop": "04:47(+1)", "duration": "~8h 48min", "workers": "5", "output": "~851 kg", "component": "Fish" },
+        { "sheet": "N 26 Mar", "task": "Beehoon Sauce B.1-8.5, Oriental Sauce, Spring Onion Ginger Oil", "start": "19:56", "stop": "23:52", "duration": "~4h", "workers": "1-4", "output": "~773 kg", "component": "Sauce" },
+        { "sheet": "D 27 Mar", "task": "Stir-Fried veg 9 runs, Blanched rice noodle B.1-9", "start": "07:00", "stop": "17:42", "duration": "~10h 42min", "workers": "4-8", "output": "~1,580 kg", "component": "Veg+noodle" }
+      ],
+      "hr": {
+        "start": "23:00",
+        "stop": "19:20(+1)",
+        "assembly_min": 465,
+        "wait_idle_min": 35,
+        "cleaning_min": 20,
+        "setup_min": 0,
+        "total_window_min": 500,
+        "meals_assembled": 12427,
+        "plan_tray_min": 42.9,
+        "actual_tray_min": 26.7,
+        "availability": 0.93,
+        "performance": 0.6224,
+        "quality": 0.9747,
+        "oee": 0.5641
+      },
+      "mr": [
+        { "date": "27 Mar", "lot": "086", "sub_lot": "01", "start": "13:35", "stop": "17:50", "duration_min": 255, "workers": 15, "meals_packed": 5885, "cartons": 245, "meals_per_man_hr": 92.3 },
+        { "date": "27 Mar", "lot": "086", "sub_lot": "02", "start": "17:50", "stop": "21:15", "duration_min": 205, "workers": 15, "meals_packed": 6552, "cartons": 272, "meals_per_man_hr": 127.8 }
+      ]
+    },
+    {
+      "product": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
+      "lots": "085 B.1 (27 Mar) + 085 B.2-5 + 086 B.1-2 (28 Mar)",
+      "lr_tasks": [
+        { "sheet": "N 25 Mar", "task": "Creamy Mushroom: Prepare+Cut (5B)", "start": "19:20", "stop": "02:15(+1)", "duration": "~6h 55min", "workers": "2-10", "output": "~766 kg", "component": "Mushroom bottleneck" },
+        { "sheet": "D 25 Mar", "task": "Forming + Baking Chicken Patties (3B)", "start": "08:00", "stop": "16:47", "duration": "~8h 47min", "workers": "1-12", "output": "~325+228 kg", "component": "Patties" },
+        { "sheet": "D 27 Mar", "task": "Fried IQF Potato B.1-8", "start": "09:49", "stop": "17:00", "duration": "7h 11min", "workers": "4", "output": "~695 kg", "component": "Potato" },
+        { "sheet": "D 27 Mar", "task": "Scrambled Egg plain (5 batches)", "start": "18:12", "stop": "20:23", "duration": "2h 11min", "workers": "4", "output": "~384 kg", "component": "Bottleneck - ready at about 20:23 and caused 100 min assembly wait" }
+      ],
+      "hr": {
+        "start": "19:20",
+        "stop": "22:10",
+        "assembly_min": 50,
+        "wait_idle_min": 100,
+        "cleaning_min": 20,
+        "setup_min": 0,
+        "total_window_min": 170,
+        "meals_assembled": 1502,
+        "plan_tray_min": 60,
+        "actual_tray_min": 30.0,
+        "availability": 0.2941,
+        "performance": 0.5,
+        "quality": 1.0,
+        "oee": 0.1471
+      },
+      "mr": [
+        { "date": "27 Mar", "lot": "085", "sub_lot": "01", "start": "23:40", "stop": "00:30(+1)", "duration_min": 50, "workers": 4, "meals_packed": 1506, "cartons": "-", "meals_per_man_hr": 451.8 },
+        { "date": "28 Mar", "lot": "085", "sub_lot": "01", "start": "15:15", "stop": "18:30", "duration_min": 195, "workers": 15, "meals_packed": 4396, "cartons": 183, "meals_per_man_hr": 90.2 },
+        { "date": "28 Mar", "lot": "085", "sub_lot": "02", "start": "18:30", "stop": "19:10", "duration_min": 40, "workers": 15, "meals_packed": 1492, "cartons": 62, "meals_per_man_hr": 149.2 },
+        { "date": "28 Mar", "lot": "086", "sub_lot": "01", "start": "19:10", "stop": "20:20", "duration_min": 70, "workers": 19, "meals_packed": 2500, "cartons": 104, "meals_per_man_hr": 112.8 },
+        { "date": "28 Mar", "lot": "087", "sub_lot": "01", "start": "20:20", "stop": "22:45", "duration_min": 145, "workers": 19, "meals_packed": 6913, "cartons": 287, "meals_per_man_hr": 150.6 }
+      ],
+      "note": "For the main 28 Mar Herb Scrambled Egg run, the workbook states: 13:50 to 20:25, window 455 min, assembly 375 min, bakedown 60 min, setup 20 min, 40.8 tray/min vs 60 plan, Availability 82.4%, Performance 68.0%, OEE 56.0%."
+    }
+  ],
+  "gaps": [
+    {
+      "stage": "ALL",
+      "metric": "OEE + OLE",
+      "gap": "Production Plan file is a risk register, not a schedule with planned hours or standard rates",
+      "impact": "No denominator for Availability at LR/MR stages; no standard rates for LR Productivity",
+      "recommendation": "Create a formal Production Plan sheet recording planned shift hours per stage and standard rates per task.",
+      "priority": "Critical"
+    },
+    {
+      "stage": "LR - Cooking",
+      "metric": "OEE Availability",
+      "gap": "Planned shift hours not recorded",
+      "impact": "Cannot calculate what percentage of the shift was used productively",
+      "recommendation": "Add planned shift start/end to the LR recording sheet header.",
+      "priority": "Critical"
+    },
+    {
+      "stage": "LR - Cooking",
+      "metric": "OLE Productivity",
+      "gap": "No standard kg/man/hr for any cooking task",
+      "impact": "Cannot rate actual productivity - only describe it",
+      "recommendation": "Conduct time studies per task and set standards.",
+      "priority": "Critical"
+    },
+    {
+      "stage": "HR - Assembly",
+      "metric": "OEE All factors (25 Mar)",
+      "gap": "Start/stop times = 0 in source for 25 Mar",
+      "impact": "Full OEE uncalculable for 25 Mar",
+      "recommendation": "Ensure supervisor signs off timing data before shift closes.",
+      "priority": "Critical"
+    },
+    {
+      "stage": "MR - Packing",
+      "metric": "OLE Productivity",
+      "gap": "No standard packing rate (meals/man/hr) defined",
+      "impact": "Cannot complete the third OLE factor",
+      "recommendation": "Define packing standard per product type via time study and add it to the MR sheet.",
+      "priority": "Critical"
+    },
+    {
+      "stage": "MR - Packing",
+      "metric": "Quality",
+      "gap": "Damage/Detect column almost entirely blank",
+      "impact": "Quality factor assumes 0 damage and may be incorrect",
+      "recommendation": "Make Damage and Detect mandatory fields, even when the value is zero.",
+      "priority": "High"
+    },
+    {
+      "stage": "LR - Cooking",
+      "metric": "OEE Quality",
+      "gap": "No reject/rework data from cooking stage",
+      "impact": "Quality factor cannot be calculated for LR",
+      "recommendation": "Add a component rejected (kg) field to the LR sheet for each task.",
+      "priority": "High"
+    },
+    {
+      "stage": "ALL",
+      "metric": "OLE Activation",
+      "gap": "No planned headcount per shift documented",
+      "impact": "Cannot calculate Activation for LR or HR",
+      "recommendation": "Add a headcount plan box to each sheet header (Planned, Actual, Absent).",
+      "priority": "High"
+    },
+    {
+      "stage": "LR - Cooking",
+      "metric": "Data Quality",
+      "gap": "Three kg/man/hr values are corrupted by a midnight-crossing timestamp bug",
+      "impact": "Wrong efficiency figures in the source file",
+      "recommendation": "Fix the Excel formula to handle midnight crossings.",
+      "priority": "High"
+    },
+    {
+      "stage": "N 27 Mar LR",
+      "metric": "Data Quality",
+      "gap": "Duplicate Paprika Potato Sauce entry",
+      "impact": "If summed, doubles that component output",
+      "recommendation": "Delete one row and check all sheets for duplicate component entries.",
+      "priority": "Medium"
+    },
+    {
+      "stage": "N 25 Mar LR",
+      "metric": "Data Quality",
+      "gap": "Creamy Mushroom Sauce B.1 and B.2 both show 00:27 start with one crew",
+      "impact": "Incorrect duration for B.2",
+      "recommendation": "Correct the B.2 start time and review concurrent same-worker entries.",
+      "priority": "Medium"
+    },
+    {
+      "stage": "D 25 Mar LR",
+      "metric": "Data Quality",
+      "gap": "IQF Potato B.2 and B.3 have the same start time with the same crew",
+      "impact": "B.3 duration appears wrong",
+      "recommendation": "Correct the B.3 start time to 16:28.",
+      "priority": "Medium"
+    },
+    {
+      "stage": "ALL",
+      "metric": "Traceability",
+      "gap": "Meal naming is inconsistent across HR summary, LR sheets, and MR sheets",
+      "impact": "Cross-referencing requires manual guesswork",
+      "recommendation": "Define a single controlled product name list with SKU codes.",
+      "priority": "Medium"
+    },
+    {
+      "stage": "MR",
+      "metric": "Traceability",
+      "gap": "Lot 087 appears in packing with no corresponding assembly record",
+      "impact": "Cannot verify the production chain for Lot 087",
+      "recommendation": "Confirm whether Lot 087 assembly was run but not recorded, or whether it was mislabeled.",
+      "priority": "Medium"
+    }
+  ]
+}

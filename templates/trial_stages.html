@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Stage 2 Trial Stage Breakdown{% endblock %}
+{% block page_id %}oee-ole-analysis-trial-stages{% endblock %}
+{% block nav_trial_stages %}is-active{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="eyebrow">OEE and OLE Analysis</p>
+        <h2>Stage 2 Trial Stage Breakdown</h2>
+    </div>
+    <div class="trial-run-toggle-row">
+        <a class="trial-run-btn is-live" href="{{ url_for('trial_run') }}">Trial Run Overview</a>
+        <a class="trial-run-btn is-active" href="{{ url_for('trial_stages') }}">Trial Stage View</a>
+    </div>
+</section>
+
+<article class="card" id="trialStageFilterCard"></article>
+
+<section class="card-grid card-grid--kpi" id="trialStageSummary"></section>
+
+<section class="trial-stage-stack">
+    <article class="card trial-stage-stack__card" id="trialStageFoodPrepCard"></article>
+    <article class="card trial-stage-stack__card" id="trialStageCookingCard"></article>
+    <article class="card trial-stage-stack__card" id="trialStageAssemblyCard"></article>
+    <article class="card trial-stage-stack__card" id="trialStagePackingCard"></article>
+    <article class="card trial-stage-stack__card" id="trialStageMealCard"></article>
+</section>
+
+<article class="card" id="trialStageQualityCard"></article>
+
+<article class="card" id="trialStageProcessFlowCard"></article>
+
+<article class="card" id="trialStageFlowCard"></article>
+
+<script src="{{ url_for('static', filename='js/oee_ole_trial_stages_page.js') }}?v=27"></script>
+{% endblock %}
