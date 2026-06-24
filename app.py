@@ -72,97 +72,207 @@ def _num(v) -> float:
         return 0.0
 
 
-def _parse_lr_excel(path: str) -> dict:
+# ── Menu-name normalisation ──────────────────────────────────────────────────
+# The production report types each menu by hand, so the same dish appears with
+# case differences, typos, "issue N" tags and varied format suffixes. We merge
+# those into one canonical item while keeping genuinely different product formats
+# (Bento / MU / CPET Tray) as separate items, and drop non-cooking/admin rows.
+
+DATA_SHEET_RE = re.compile(r"^([DN])\s+(\d{1,2})\s+([A-Za-z]{3})", re.IGNORECASE)
+_MONTHS = {m: i for i, m in enumerate(
+    ["", "jan", "feb", "mar", "apr", "may", "jun",
+     "jul", "aug", "sep", "oct", "nov", "dec"])}
+_MONTH_LABELS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_REPORT_YEAR = 2026
+
+_ADMIN_RE = re.compile(
+    r"move tools|produce\s*@|cooking room|prepare vegetable support|"
+    r"support prepare|^\(?lot\.?|^lot\b|ขอยืม|ยังไม่",
+    re.IGNORECASE,
+)
+_FORMAT_RULES = [
+    ("Bento", re.compile(r"bento", re.IGNORECASE)),
+    ("CPET Tray", re.compile(r"cpet", re.IGNORECASE)),
+    ("MU", re.compile(r"\bmu\b", re.IGNORECASE)),
+]
+
+
+def _menu_format(name: str) -> str:
+    for tag, rx in _FORMAT_RULES:
+        if rx.search(name):
+            return tag
+    return ""
+
+
+def _menu_base_key(name: str) -> str:
+    s = name.lower()
+    s = re.sub(r"\([^)]*\)", " ", s)        # drop parentheticals (formats/notes)
+    s = re.sub(r"issue\s*\d+", " ", s)      # drop "issue 4"
+    s = re.sub(r"lot\.?\s*\d+", " ", s)     # drop lot refs
+    s = re.sub(r"\*+", " ", s)              # drop ***
+    s = re.sub(r"[^a-z0-9]+", " ", s)       # punctuation -> space
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _menu_is_admin(name: str) -> bool:
+    if not name or name.strip() in ("-", "Unknown"):
+        return True
+    if _ADMIN_RE.search(name):
+        return True
+    bk = _menu_base_key(name)
+    if not bk or not re.search(r"[a-z]", bk):     # no latin letters (Thai-only etc.)
+        return True
+    if bk.startswith("produce stage") or bk.startswith("move tools"):
+        return True
+    return False
+
+
+def _menu_display(name: str, fmt: str) -> str:
+    disp = re.sub(r"\([^)]*\)", "", name)
+    disp = re.sub(r"\s*issue\s*\d+", "", disp, flags=re.IGNORECASE)
+    disp = re.sub(r"\*+", "", disp)
+    disp = re.sub(r"\s+", " ", disp).strip(" ,")
+    return f"{disp} ({fmt})" if fmt else disp
+
+
+def _build_menu_canon(raw_counts: dict, threshold: float = 0.90) -> dict:
+    """Map each raw menu string to a canonical display name (or None if admin)."""
+    import difflib
+
+    items = sorted(
+        ((m, c) for m, c in raw_counts.items() if not _menu_is_admin(m)),
+        key=lambda x: -x[1],
+    )
+    clusters = []  # {fmt, key, display}
+    canon = {}
+    for raw, _cnt in items:
+        fmt = _menu_format(raw)
+        bk = _menu_base_key(raw)
+        best, best_r = None, 0.0
+        for cl in clusters:
+            if cl["fmt"] != fmt:
+                continue
+            r = difflib.SequenceMatcher(None, cl["key"], bk).ratio()
+            if r > best_r:
+                best_r, best = r, cl
+        if best and best_r >= threshold:
+            canon[raw] = best["display"]
+        else:
+            disp = _menu_display(raw, fmt)
+            clusters.append({"fmt": fmt, "key": bk, "display": disp})
+            canon[raw] = disp
+    for m in raw_counts:
+        if m not in canon:
+            canon[m] = None
+    return canon
+
+
+def _sheet_date_iso(sheet_name: str):
+    m = DATA_SHEET_RE.match(sheet_name.strip())
+    if not m:
+        return None
+    mon = _MONTHS.get(m.group(3).lower())
+    if not mon:
+        return None
+    return f"{_REPORT_YEAR}-{mon:02d}-{int(m.group(2)):02d}"
+
+
+def _date_label(iso: str) -> str:
+    _y, mo, d = iso.split("-")
+    return f"{int(d)} {_MONTH_LABELS[int(mo)]}"
+
+
+def _parse_lr_production(path: str) -> dict:
+    """Parse the month-wide LR production report into per-(date, menu, step) rows.
+
+    Batches of the same step are merged; each machine carries total run minutes
+    and the number of batches it ran (so the client can show a per-batch time).
+    """
     import openpyxl
 
-    wb = openpyxl.load_workbook(path, data_only=True)
-    result = {}
+    wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+    data_sheets = [sn for sn in wb.sheetnames if _sheet_date_iso(sn)]
 
-    for sheet_name in wb.sheetnames:
-        ws = wb[sheet_name]
-        rows = list(ws.iter_rows(min_row=4, values_only=True))
-
-        current_section = None
-        current_menu = None
-        meals: dict = {}
-
-        for row in rows:
+    # Pass 1 — count raw menu strings so we can cluster them into canonical names.
+    raw_counts: dict = {}
+    for sn in data_sheets:
+        cur_menu = None
+        for row in wb[sn].iter_rows(min_row=4, values_only=True):
             if not any(v is not None for v in row):
                 continue
-
-            # Carry-forward section and menu (merged cells appear as None)
-            if row[2] is not None:
-                current_section = str(row[2]).strip()
             if row[3] is not None and str(row[3]).strip() not in ("", "None"):
-                current_menu = str(row[3]).strip()
+                cur_menu = str(row[3]).strip()
+            comp = row[4]
+            if not comp or str(comp).strip() in ("", "None"):
+                continue
+            raw_counts[cur_menu or ""] = raw_counts.get(cur_menu or "", 0) + 1
+    canon = _build_menu_canon(raw_counts)
 
-            component = row[4]
-            if not component:
+    # Pass 2 — aggregate by (date, canonical menu, batch-stripped step).
+    agg: dict = {}
+    date_labels: dict = {}
+    for sn in data_sheets:
+        iso = _sheet_date_iso(sn)
+        date_labels[iso] = _date_label(iso)
+        cur_menu = None
+        for row in wb[sn].iter_rows(min_row=4, values_only=True):
+            if not any(v is not None for v in row):
+                continue
+            if row[3] is not None and str(row[3]).strip() not in ("", "None"):
+                cur_menu = str(row[3]).strip()
+            comp = row[4]
+            if not comp or str(comp).strip() in ("", "None"):
+                continue
+            menu = canon.get(cur_menu or "")
+            if not menu:
+                continue
+            comp_s = str(comp).strip()
+            if any(kw in comp_s.lower() for kw in _SKIP_KEYWORDS):
                 continue
 
-            comp = str(component).strip()
-            if not comp or comp == "None":
-                continue
-            if any(kw in comp.lower() for kw in _SKIP_KEYWORDS):
-                continue
+            step_disp = _strip_batch(comp_s) or comp_s
+            key = (iso, menu, step_disp.lower())
+            entry = agg.get(key)
+            if entry is None:
+                entry = {
+                    "date": iso,
+                    "menu": menu,
+                    "step": step_disp,
+                    "batches": 0,
+                    "duration_min": 0.0,
+                    "kg": 0.0,
+                    "machines": {},
+                }
+                agg[key] = entry
 
-            time_use_min = _to_min(row[8])
-            output_kg = _num(row[10])
-            workers = int(_num(row[9]))
-            base_step = _strip_batch(comp)
-            menu = current_menu or "Unknown"
-
-            meals.setdefault(menu, {})
-            meals[menu].setdefault(base_step, {
-                "section": current_section or "",
-                "batches": 0,
-                "total_minutes": 0.0,
-                "total_kg": 0.0,
-                "workers": 0,
-                "machines": {m: 0.0 for _, m in MACHINE_COLS},
-            })
-
-            step = meals[menu][base_step]
-            step["batches"] += 1
-            step["total_minutes"] += time_use_min
-            step["total_kg"] += output_kg
-            step["workers"] = max(step["workers"], workers)
+            entry["batches"] += 1
+            entry["duration_min"] += _to_min(row[8])
+            entry["kg"] += _num(row[10])
 
             row_len = len(row)
             for col_idx, machine_name in MACHINE_COLS:
                 if col_idx < row_len:
-                    step["machines"][machine_name] += _num(row[col_idx])
+                    mins = _num(row[col_idx])
+                    if mins > 0:
+                        mm = entry["machines"].setdefault(
+                            machine_name, {"minutes": 0.0, "batches": 0})
+                        mm["minutes"] += mins
+                        mm["batches"] += 1
 
-        # Serialise to list, drop machines with zero usage
-        meals_out = {}
-        for meal, steps in meals.items():
-            steps_list = []
-            for step_name, d in steps.items():
-                active_machines = [
-                    {"name": k, "minutes": round(v, 1)}
-                    for k, v in d["machines"].items()
-                    if v > 0
-                ]
-                steps_list.append({
-                    "name": step_name,
-                    "section": d["section"],
-                    "batches": d["batches"],
-                    "total_minutes": round(d["total_minutes"], 1),
-                    "total_kg": round(d["total_kg"], 2),
-                    "workers": d["workers"],
-                    "machines": active_machines,
-                })
+    tasks = []
+    for entry in agg.values():
+        entry["duration_min"] = round(entry["duration_min"], 1)
+        entry["kg"] = round(entry["kg"], 2)
+        for mm in entry["machines"].values():
+            mm["minutes"] = round(mm["minutes"], 1)
+        tasks.append(entry)
 
-            meals_out[meal] = {
-                "steps": steps_list,
-                "step_count": len(steps_list),
-                "total_kg": round(sum(s["total_kg"] for s in steps_list), 2),
-                "total_minutes": round(sum(s["total_minutes"] for s in steps_list), 1),
-            }
-
-        result[sheet_name] = meals_out
-
-    return result
+    return {
+        "dates": sorted(date_labels.keys()),
+        "date_labels": date_labels,
+        "tasks": tasks,
+    }
 
 
 # ── Pages ──────────────────────────────────────────────────────────────────────
@@ -190,13 +300,13 @@ def trial_run_data():
         return jsonify(json.load(f))
 
 
-@app.route("/api/lr-machine-data")
-def lr_machine_data():
-    path = DATA_DIR / "LR_stage2_march.xlsx"
+@app.route("/api/lr-production-data")
+def lr_production_data():
+    path = DATA_DIR / "LR_production_march.xlsx"
     if not path.exists():
-        return jsonify({"error": "Excel file not found"}), 404
+        return jsonify({"error": "Production report not found"}), 404
     try:
-        return jsonify(_parse_lr_excel(str(path)))
+        return jsonify(_parse_lr_production(str(path)))
     except Exception as e:
         app.logger.error("Excel parse error: %s", e)
         return jsonify({"error": str(e)}), 500

@@ -404,7 +404,7 @@
                 machineSummary: aggregateMachineMinutes(group.tasks),
                 machineUsage: aggregateMachineUsage(group.tasks),
                 shiftLabels: Array.from(group.shiftLabels),
-                menus: Array.from(group.menus).sort(),
+                menus: Array.from(group.menus).filter(Boolean).sort(),
             }))
             .sort((a, b) => String(a.date).localeCompare(String(b.date)));
     }

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}LR Cooking Analysis | Stage 2 Trial{% endblock %}
+{% block title %}LR Cooking Analysis | March Production{% endblock %}
 {% block page_id %}cooking-analysis{% endblock %}
 {% block nav_cooking %}is-active{% endblock %}
 
@@ -8,18 +8,19 @@
 <section class="page-intro">
     <div>
         <p class="eyebrow">LR Zone — Low Risk Stage</p>
-        <h2>Cooking Analysis — Machine Usage &amp; Meal Routing</h2>
-        <p class="card__helper">Each meal's cooking steps grouped by ingredient, showing which machines were used, for how long, and total output per step. Batches of the same step are merged.</p>
+        <h2>Cooking Analysis — Menu / Step / Machine Breakdown</h2>
+        <p class="card__helper">Every menu item produced in March, broken down into its cooking steps with the machine(s) used. Repeated batches of a step are merged: machine times show the total run time across all batches, with the average time for one batch alongside.</p>
     </div>
 </section>
 
 <article class="card section-gap">
     <div class="card__header">
-        <div>
+        <div style="min-width:0">
             <p class="eyebrow">Filter</p>
-            <h3>Select Shift</h3>
+            <h3>Select Date</h3>
+            <p class="card__helper" id="cookingScopeNote">Loading…</p>
         </div>
-        <select id="sheetSelector" class="view-select" style="min-width:180px">
+        <select id="dateSelector" class="view-select view-select--light" style="flex:none;width:auto;min-width:200px">
             <option value="">Loading...</option>
         </select>
     </div>
@@ -28,9 +29,9 @@
 <article class="card section-gap" id="machineSummaryCard" style="display:none">
     <div class="card__header">
         <div>
-            <p class="eyebrow">Shift Total</p>
+            <p class="eyebrow">Period Total</p>
             <h3>Machine Utilisation Summary</h3>
-            <p class="card__helper">Total minutes each machine was operated across all meals in this shift.</p>
+            <p class="card__helper">Total minutes each machine was operated across all menu items in the selected scope.</p>
         </div>
     </div>
     <div id="machineSummaryGrid" class="machine-summary-grid"></div>
@@ -40,8 +41,8 @@
 
 <div id="cookingLoadState" class="loading-state">
     <div class="loading-spinner"></div>
-    <span>Loading Excel data...</span>
+    <span>Loading production report...</span>
 </div>
 
-<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=1"></script>
+<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=2"></script>
 {% endblock %}
