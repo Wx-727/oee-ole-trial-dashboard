@@ -8516,6 +8516,34 @@ canvas {
     padding: 14px 16px 16px;
 }
 
+.trial-stage-collapse--nested {
+    margin-top: 10px;
+    border-radius: 10px;
+    background: var(--bg-subtle, rgba(0, 0, 0, 0.02));
+}
+
+.trial-stage-collapse--nested summary {
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.trial-stage-collapse--nested .trial-stage-collapse__body {
+    padding: 10px 14px 12px;
+}
+
+.trial-stage-note {
+    margin: 0 0 12px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--text-muted, #6b7280);
+}
+
+.trial-stage-muted {
+    color: var(--text-muted, #9ca3af);
+    font-style: italic;
+}
+
 .trial-stage-pill-list {
     display: flex;
     flex-wrap: wrap;
@@ -9641,3 +9669,176 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
     }
 }
 
+
+/* ── Cooking Analysis page ──────────────────────────────────────────────────── */
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 24px;
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+}
+
+.machine-summary-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.machine-summary-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 72px;
+    align-items: center;
+    gap: 12px;
+}
+
+.machine-summary-row__name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.machine-summary-row__bar-wrap {
+    background: var(--surface-alt, #f3f4f6);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.machine-summary-row__bar {
+    height: 100%;
+    background: var(--blue, #3b82f6);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.machine-summary-row__value {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+    text-align: right;
+}
+
+.meal-accordion-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.meal-accordion-card--open .meal-accordion-header {
+    border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.meal-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    cursor: pointer;
+    user-select: none;
+    gap: 16px;
+}
+
+.meal-accordion-header:hover {
+    background: var(--surface-alt, #f9fafb);
+}
+
+.meal-accordion-header__title h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 2px 0 0;
+    color: var(--text-primary, #111827);
+}
+
+.meal-accordion-header__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.meal-meta-pill {
+    background: var(--surface-alt, #f3f4f6);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary, #6b7280);
+    white-space: nowrap;
+}
+
+.meal-accordion-chevron {
+    font-size: 1.1rem;
+    color: var(--text-secondary, #6b7280);
+    transition: transform 0.2s ease;
+    line-height: 1;
+}
+
+.meal-accordion-body {
+    padding: 0 24px 20px;
+}
+
+.meal-step-table-wrap {
+    overflow-x: auto;
+    margin-top: 12px;
+}
+
+.meal-step-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.meal-step-table th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    white-space: nowrap;
+}
+
+.meal-step-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border-light, #f3f4f6);
+    vertical-align: top;
+    color: var(--text-primary, #111827);
+}
+
+.meal-step-table tr:last-child td {
+    border-bottom: none;
+}
+
+.col-center {
+    text-align: center;
+}
+
+.col-machines {
+    min-width: 220px;
+}
+
+.machine-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface-alt, #f0f4ff);
+    border: 1px solid var(--blue-light, #dbeafe);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    color: var(--blue-dark, #1d4ed8);
+    margin: 2px 3px 2px 0;
+    white-space: nowrap;
+}
+
+.machine-pill strong {
+    font-weight: 700;
+}

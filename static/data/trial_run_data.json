@@ -452,7 +452,6 @@
             "menu_count": 5,
             "menus": [
               "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
-              "Support Prepare Veg. 9 people",
               "Chicken Pasta in Tomato and Basil Sauce (Bento)",
               "Creamy Chicken and Mushroom with Pasta (Bento)",
               "Fish in Oriental Sauce with Short Grain Rice"
@@ -477,7 +476,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Support Prepare Veg. 9 people",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Paprika Potato Sauce (4 batch)",
               "dimension": null,
               "start": "22:38",
@@ -493,7 +492,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Support Prepare Veg. 9 people",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Creamy Mushroom Sauce B.1",
               "dimension": null,
               "start": "02:00",
@@ -509,7 +508,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Support Prepare Veg. 9 people",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Creamy Mushroom Sauce B.2",
               "dimension": null,
               "start": "02:52",
@@ -525,7 +524,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Support Prepare Veg. 9 people",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Creamy Mushroom Sauce B.3",
               "dimension": null,
               "start": "03:51",
@@ -541,7 +540,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Support Prepare Veg. 9 people",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Creamy Mushroom Sauce B.4",
               "dimension": null,
               "start": "04:43",
@@ -1321,7 +1320,7 @@
               "Ginger Spring Onion Fish with Rice Vermicelli",
               "Fish in Oriental Sauce with Short Grain Rice",
               "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
-              "Spring Onion chicken with Noodles"
+              "Spring Onion Chicken with Noodles"
             ]
           },
           "tasks": [
@@ -2394,7 +2393,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Stir-fried vegetable B.1",
               "dimension": null,
               "start": "17:47",
@@ -2410,7 +2409,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Stir-fried vegetable B.2",
               "dimension": null,
               "start": "18:18",
@@ -2426,7 +2425,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Stir-fried vegetable B.3",
               "dimension": null,
               "start": "18:35",
@@ -2442,7 +2441,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Stir-fried vegetable B.4",
               "dimension": null,
               "start": "18:45",
@@ -2458,7 +2457,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanched chye sim B.1",
               "dimension": null,
               "start": "15:53",
@@ -2474,7 +2473,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanched chye sim B.2",
               "dimension": null,
               "start": "16:40",
@@ -2490,7 +2489,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanched chye sim B.3",
               "dimension": null,
               "start": "16:53",
@@ -2506,7 +2505,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanched chye sim B.4",
               "dimension": null,
               "start": "17:03",
@@ -2522,7 +2521,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanched chye sim B.5",
               "dimension": null,
               "start": "17:18",
@@ -2538,7 +2537,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanced spring onion B.1",
               "dimension": null,
               "start": "17:29",
@@ -2554,7 +2553,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanced spring onion B.2",
               "dimension": null,
               "start": "17:31",
@@ -2570,7 +2569,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanced spring onion B.3",
               "dimension": null,
               "start": "17:32",
@@ -2586,7 +2585,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanced spring onion B.4",
               "dimension": null,
               "start": "17:35",
@@ -2602,7 +2601,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Spring Onion chicken with Noodles",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Blanced spring onion B.5",
               "dimension": null,
               "start": "17:36",
@@ -3435,7 +3434,7 @@
             "menus": [
               "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "Spring Onion Chicken with Noodles",
-              "Ginger Spring onion"
+              "Ginger Spring Onion Fish with Rice Vermicelli"
             ]
           },
           "tasks": [
@@ -3721,7 +3720,7 @@
             },
             {
               "section": "Prepare Vegetable",
-              "menu": "Ginger Spring onion",
+              "menu": "Ginger Spring Onion Fish with Rice Vermicelli",
               "component": "White onion slice",
               "dimension": null,
               "start": "15:40",
@@ -3736,7 +3735,7 @@
             },
             {
               "section": "Prepare Vegetable",
-              "menu": "Ginger Spring onion",
+              "menu": "Ginger Spring Onion Fish with Rice Vermicelli",
               "component": "Prepare White onion",
               "dimension": null,
               "start": "15:20",
@@ -3751,7 +3750,7 @@
             },
             {
               "section": "Prepare Vegetable",
-              "menu": "Ginger Spring onion",
+              "menu": "Ginger Spring Onion Fish with Rice Vermicelli",
               "component": "Cleaning Line",
               "dimension": null,
               "start": "17:30",
@@ -4880,7 +4879,6 @@
             "menus": [
               "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "Spring Onion Chicken with Noodles",
-              "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
               "Ginger Spring Onion Fish with Rice Vermicelli"
             ]
           },
@@ -4998,7 +4996,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.1/2",
               "dimension": null,
               "start": "20:32",
@@ -5013,7 +5011,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.2/1",
               "dimension": null,
               "start": "20:47",
@@ -5028,7 +5026,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.2/2",
               "dimension": null,
               "start": "20:50",
@@ -5043,7 +5041,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.3/1",
               "dimension": null,
               "start": "21:12",
@@ -5058,7 +5056,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.3/2",
               "dimension": null,
               "start": "21:15",
@@ -5073,7 +5071,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.4/1",
               "dimension": null,
               "start": "21:36",
@@ -5088,7 +5086,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.4/2",
               "dimension": null,
               "start": "21:42",
@@ -5103,7 +5101,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.5/1",
               "dimension": null,
               "start": "22:00",
@@ -5118,7 +5116,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Ster-Fried Chicken B.5/2",
               "dimension": null,
               "start": "22:10",
@@ -5133,7 +5131,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.1/1",
               "dimension": null,
               "start": "20:54",
@@ -5149,7 +5147,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.1/2",
               "dimension": null,
               "start": "20:57",
@@ -5165,7 +5163,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.2/1",
               "dimension": null,
               "start": "21:12",
@@ -5180,7 +5178,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.2/2",
               "dimension": null,
               "start": "21:17",
@@ -5195,7 +5193,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.3/1",
               "dimension": null,
               "start": "21:32",
@@ -5211,7 +5209,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.3/2",
               "dimension": null,
               "start": "21:36",
@@ -5227,7 +5225,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.4/1",
               "dimension": null,
               "start": "22:01",
@@ -5243,7 +5241,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.4/2",
               "dimension": null,
               "start": "22:05",
@@ -5259,7 +5257,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.5/1",
               "dimension": null,
               "start": "22:23",
@@ -5274,7 +5272,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "ขอยืมซอสจากฝั่งสุกมาใช้ผัดไก่ 60kg.",
+              "menu": "Spring Onion Chicken with Noodles",
               "component": "Cooked Chicken B.5/2",
               "dimension": null,
               "start": "22:28",
@@ -6222,7 +6220,7 @@
             "menus": [
               "Chicken ragout with pasta, Mushroom Cream sauce (Bento)",
               "Fish in Oriental Sauce with Short Grain Rice",
-              "Herb Scrambled Egg,Paprika Potatoes, Spinach Corn,Chicken Patties,Creamy Mushroom"
+              "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom"
             ]
           },
           "tasks": [
@@ -6267,7 +6265,7 @@
             },
             {
               "section": "Prepare Vegetable",
-              "menu": "Herb Scrambled Egg,Paprika Potatoes, Spinach Corn,Chicken Patties,Creamy Mushroom",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Tomato concasse for patties/Open Tomto",
               "dimension": null,
               "start": "22:25",
@@ -6280,7 +6278,7 @@
             },
             {
               "section": "Prepare Vegetable",
-              "menu": "Herb Scrambled Egg,Paprika Potatoes, Spinach Corn,Chicken Patties,Creamy Mushroom",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Tomato concasse for patties/Tomato Chop 8 B.",
               "dimension": "0.5",
               "start": "23:10",
@@ -6293,7 +6291,7 @@
             },
             {
               "section": "Prepare Vegetable",
-              "menu": "Herb Scrambled Egg,Paprika Potatoes, Spinach Corn,Chicken Patties,Creamy Mushroom",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Parsley Chop 8 B.",
               "dimension": null,
               "start": "02:20",
@@ -6317,7 +6315,7 @@
               "Chicken ragout with pasta, Mushroom Cream sauce (Bento)",
               "Fish in Oriental Sauce with Short Grain Rice",
               "Spring Onion Chicken with Noodles",
-              "Herb Scrambled Egg,Paprika Potatoes, Spinach Corn,Chicken Patties,Creamy Mushroom"
+              "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom"
             ]
           },
           "tasks": [
@@ -7546,7 +7544,7 @@
             },
             {
               "section": "Cooking",
-              "menu": "Herb Scrambled Egg,Paprika Potatoes, Spinach Corn,Chicken Patties,Creamy Mushroom",
+              "menu": "Herb Scrambled Egg, Paprika Potato, Spinach Corn, Chicken Patties, Creamy Mushroom",
               "component": "Tomato concasse for Patties B.1-8",
               "dimension": null,
               "start": "05:33",

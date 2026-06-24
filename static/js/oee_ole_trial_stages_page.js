@@ -243,20 +243,111 @@
     function aggregateMachineUsage(tasks) {
         const totals = {};
         (tasks || []).forEach((task) => {
+            const kg = Number(task.kg_output || 0);
             Object.entries(task.machines || {}).forEach(([machine, mins]) => {
                 if (!totals[machine]) {
                     totals[machine] = {
                         machine,
                         minutes: 0,
+                        kg: 0,
                         tasks: 0,
                     };
                 }
                 totals[machine].minutes += Number(mins || 0);
+                // Full task output is credited to each machine the material passed
+                // through, so this column is per-machine and not additive across rows.
+                totals[machine].kg += Number.isFinite(kg) ? kg : 0;
                 totals[machine].tasks += 1;
             });
         });
         return Object.values(totals)
             .sort((a, b) => b.minutes - a.minutes || a.machine.localeCompare(b.machine));
+    }
+
+    // Groups tasks into a menu -> step -> machine tree so the cooking section can
+    // show, per meal, which steps ran on which machines and for how long.
+    // Strip trailing batch markers so repeated batches of one task collapse to a
+    // single step. Handles e.g. "B.1/1", "B.12/2", "B.1-3", "B.1-B.5", "B.7-8.5",
+    // "B.10", "(0.5batch)", "5 batch", "8.5 B.", and bare fractions like "10/2".
+    function stripBatchSuffix(raw) {
+        const original = String(raw == null ? "" : raw).trim();
+        let s = original;
+        let prev;
+        do {
+            prev = s;
+            s = s
+                .replace(/\s*\(\s*[\d.]+\s*batch\w*\s*\)\s*$/i, "")      // "(0.5batch)", "(4 batch)"
+                .replace(/\s+B\.\s*\d+\s*\/\s*\d+\s*$/i, "")             // "B.1/1", "B.12/2"
+                .replace(/\s+B\.\s*\d+(?:\.\d+)?\s*-\s*(?:B\.)?\s*\d+(?:\.\d+)?\s*$/i, "") // "B.1-3", "B.4-B.5", "B.7-8.5"
+                .replace(/\s+B\.\s*\d+(?:\.\d+)?\s*$/i, "")              // "B.1", "B.10"
+                .replace(/\s+\d+\s*\/\s*\d+\s*$/i, "")                   // bare "1/1", "10/2"
+                .replace(/\s+[\d.]+\s+batch\w*\s*$/i, "")                // "5 batch", "8.5 batch"
+                .replace(/\s+[\d.]+\s+B\.\s*$/i, "")                     // "5 B.", "8.5 B."
+                .trim();
+        } while (s !== prev && s.length > 0);
+        return s.length ? s : original;
+    }
+
+    function buildMenuMachineBreakdown(tasks) {
+        const menus = {};
+        (tasks || []).forEach((task) => {
+            const menuKey = task.menu || "Unspecified meal";
+            if (!menus[menuKey]) {
+                menus[menuKey] = { menu: menuKey, stepMap: {}, stepOrder: [], totalKg: 0, totalDuration: 0 };
+            }
+            const bucket = menus[menuKey];
+            const displayName = stripBatchSuffix(task.component) || (task.component || "Unspecified step");
+            const stepKey = displayName.toLowerCase();
+            if (!bucket.stepMap[stepKey]) {
+                bucket.stepMap[stepKey] = {
+                    component: displayName,
+                    shiftLabels: new Set(),
+                    duration: 0,
+                    kg: 0,
+                    batches: 0,
+                    machineMinutes: {},
+                };
+                bucket.stepOrder.push(stepKey);
+            }
+            const step = bucket.stepMap[stepKey];
+            step.batches += 1;
+            step.duration += Number(task.duration_min || 0);
+            step.kg += Number(task.kg_output || 0);
+            if (task.shiftLabel) step.shiftLabels.add(task.shiftLabel);
+            Object.entries(task.machines || {}).forEach(([machine, mins]) => {
+                if (!step.machineMinutes[machine]) {
+                    step.machineMinutes[machine] = { minutes: 0, batches: 0 };
+                }
+                step.machineMinutes[machine].minutes += Number(mins || 0);
+                step.machineMinutes[machine].batches += 1;
+            });
+            bucket.totalKg += Number(task.kg_output || 0);
+            bucket.totalDuration += Number(task.duration_min || 0);
+        });
+        return Object.values(menus)
+            .map((bucket) => ({
+                menu: bucket.menu,
+                totalKg: bucket.totalKg,
+                totalDuration: bucket.totalDuration,
+                steps: bucket.stepOrder.map((stepKey) => {
+                    const step = bucket.stepMap[stepKey];
+                    return {
+                        component: step.component,
+                        batches: step.batches,
+                        shiftLabel: Array.from(step.shiftLabels).join(", "),
+                        duration: step.duration,
+                        kg: step.kg,
+                        machines: Object.entries(step.machineMinutes)
+                            .map(([machine, v]) => ({
+                                machine,
+                                minutes: v.minutes,
+                                perBatch: v.batches ? v.minutes / v.batches : v.minutes,
+                            }))
+                            .sort((a, b) => b.minutes - a.minutes || a.machine.localeCompare(b.machine)),
+                    };
+                }),
+            }))
+            .sort((a, b) => b.totalKg - a.totalKg || a.menu.localeCompare(b.menu));
     }
 
     function buildLrStageDateGroups(trialData, stageKey) {
@@ -1867,6 +1958,7 @@
             detail.innerHTML = renderUnavailableKpi("Cooking", "No Cooking data exists for the selected date.");
             return;
         }
+        const cookingMenuBreakdown = buildMenuMachineBreakdown(group.tasks);
         detail.innerHTML = `
             <div class="oee-trial-comparison-grid" style="margin-bottom:14px">
                 <div class="oee-gap-card"><span class="oee-gap-card__label">Cooking OEE</span><strong class="oee-gap-card__value">${pct(proxyOee())}</strong><span class="oee-gap-card__detail">${proxyAssumptionLabel()}</span></div>
@@ -1891,19 +1983,51 @@
                 <div class="trial-stage-collapse__body">
                     <div class="oee-table-wrap">
                         <table class="data-table oee-mini-table">
-                            <thead><tr><th>Equipment</th><th>Total Usage Time</th><th>Usage (hr)</th><th>Task References</th></tr></thead>
+                            <thead><tr><th>Equipment</th><th>Total Usage Time</th><th>Usage (hr)</th><th>Output Processed (Kg)</th><th>Task References</th></tr></thead>
                             <tbody>
                                 ${group.machineUsage.length ? group.machineUsage.map((row) => `
                                     <tr>
                                         <td>${esc(row.machine)}</td>
                                         <td>${num(row.minutes)} min</td>
                                         <td>${num(row.minutes / 60, 2)} hr</td>
+                                        <td>${num(row.kg, 1)} kg</td>
                                         <td>${num(row.tasks)}</td>
                                     </tr>
-                                `).join("") : `<tr><td colspan="4">No machine usage rows were recorded for the selected date.</td></tr>`}
+                                `).join("") : `<tr><td colspan="5">No machine usage rows were recorded for the selected date.</td></tr>`}
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </details>
+            <details class="trial-stage-collapse">
+                <summary><span>Menu / Step / Machine Breakdown</span><span>${num(cookingMenuBreakdown.length)} meal(s)</span></summary>
+                <div class="trial-stage-collapse__body">
+                    <p class="trial-stage-note">Each meal's cooking steps with the machine(s) used and how long each ran. Repeated batches of a step are merged: machine times show the total run time across all batches, with the average time for one batch in brackets. Step duration and Kg are summed across the batches.</p>
+                    ${cookingMenuBreakdown.map((menu) => `
+                        <details class="trial-stage-collapse trial-stage-collapse--nested">
+                            <summary><span>${esc(shortProduct(menu.menu))}</span><span>${num(menu.steps.length)} step(s) | ${num(menu.totalKg, 1)} kg | ${formatMinutes(menu.totalDuration)}</span></summary>
+                            <div class="trial-stage-collapse__body">
+                                <div class="oee-table-wrap">
+                                    <table class="data-table oee-mini-table">
+                                        <thead><tr><th>Step</th><th>Machine(s) &amp; Run Time</th><th>Step Duration</th><th>Output (Kg)</th><th>Shift</th></tr></thead>
+                                        <tbody>
+                                            ${menu.steps.map((step) => `
+                                                <tr>
+                                                    <td>${esc(step.component)}${step.batches > 1 ? ` <span class="trial-stage-muted">(${num(step.batches)} batches)</span>` : ""}</td>
+                                                    <td>${step.machines.length
+                                                        ? step.machines.map((m) => `${esc(m.machine)} — ${num(m.minutes)} min${step.batches > 1 ? ` <span class="trial-stage-muted">(${num(m.perBatch, 1)} min/batch)</span>` : ""}`).join("<br>")
+                                                        : '<span class="trial-stage-muted">No machine recorded</span>'}</td>
+                                                    <td>${formatMinutes(step.duration)}</td>
+                                                    <td>${num(step.kg, 2)}</td>
+                                                    <td>${esc(step.shiftLabel)}</td>
+                                                </tr>
+                                            `).join("")}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </details>
+                    `).join("")}
                 </div>
             </details>
             <details class="trial-stage-collapse">

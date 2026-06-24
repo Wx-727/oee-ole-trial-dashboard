@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=88">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=89">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body data-page="{% block page_id %}{% endblock %}">
@@ -24,8 +24,8 @@
     </header>
 
     <nav class="subnav">
-        <a href="{{ url_for('trial_run') }}" class="subnav__link {% block nav_trial_run %}{% endblock %}">Trial Run Overview</a>
         <a href="{{ url_for('trial_stages') }}" class="subnav__link {% block nav_trial_stages %}{% endblock %}">Trial Stage Breakdown</a>
+        <a href="{{ url_for('cooking_analysis') }}" class="subnav__link {% block nav_cooking %}{% endblock %}">LR Cooking Analysis</a>
     </nav>
 
     <main class="page-shell">

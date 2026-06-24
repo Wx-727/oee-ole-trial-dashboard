@@ -1,9 +1,10 @@
+import datetime as dt
 import json
-import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 load_dotenv()
 
@@ -11,17 +12,174 @@ app = Flask(__name__)
 
 DATA_DIR = Path(__file__).parent / "static" / "data"
 
+# ── LR Excel parser ────────────────────────────────────────────────────────────
+
+MACHINE_COLS = [
+    (12, "Bowl Cutter"),
+    (13, "Blender (Batching)"),
+    (14, "Vegetable Cutting"),
+    (15, "Peeling Machine"),
+    (16, "Can Opener"),
+    (17, "Robocoupe Dice"),
+    (18, "Knife"),
+    (19, "Meat Ball Machine"),
+    (20, "Egg Filling"),
+    (21, "Steam Box 1"),
+    (22, "Steam Box 2"),
+    (23, "Combi Oven 1"),
+    (24, "Combi Oven 2"),
+    (25, "Combi Oven 3"),
+    (26, "Combi Oven 4"),
+    (27, "Bratt Pan 1"),
+    (28, "Bratt Pan 2"),
+    (29, "Bratt Pan 3"),
+    (30, "Bratt Pan 4"),
+    (31, "Round Bratt Pan"),
+    (32, "Pan Fry"),
+    (33, "Deep Fryer 1"),
+    (34, "Deep Fryer 2"),
+    (35, "Deep Fryer 3"),
+    (36, "Deep Fryer 4"),
+    (37, "Hot Plate"),
+    (38, "Flame Grill"),
+]
+
+_BATCH_RE = re.compile(
+    r"(\s+B\.[\d][\d\/\-]*\.?\s*$"   # B.1, B.12, B.1-2, B.1/1
+    r"|\s+\d+\s+B\.\s*$"             # 3 B., 4 B.
+    r"|\s+\d+\s+batch\w*\s*$"        # 5 batch, 5 batches
+    r"|\s+\d+\/\d+\s*$)",            # 1/1, 1/2 fraction style
+    re.IGNORECASE,
+)
+
+_SKIP_KEYWORDS = ("cleaning line", "break", "เตรียม")
+
+
+def _strip_batch(name: str) -> str:
+    return _BATCH_RE.sub("", name).strip()
+
+
+def _to_min(v) -> float:
+    if isinstance(v, dt.time):
+        return v.hour * 60 + v.minute + v.second / 60
+    return 0.0
+
+
+def _num(v) -> float:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _parse_lr_excel(path: str) -> dict:
+    import openpyxl
+
+    wb = openpyxl.load_workbook(path, data_only=True)
+    result = {}
+
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+        rows = list(ws.iter_rows(min_row=4, values_only=True))
+
+        current_section = None
+        current_menu = None
+        meals: dict = {}
+
+        for row in rows:
+            if not any(v is not None for v in row):
+                continue
+
+            # Carry-forward section and menu (merged cells appear as None)
+            if row[2] is not None:
+                current_section = str(row[2]).strip()
+            if row[3] is not None and str(row[3]).strip() not in ("", "None"):
+                current_menu = str(row[3]).strip()
+
+            component = row[4]
+            if not component:
+                continue
+
+            comp = str(component).strip()
+            if not comp or comp == "None":
+                continue
+            if any(kw in comp.lower() for kw in _SKIP_KEYWORDS):
+                continue
+
+            time_use_min = _to_min(row[8])
+            output_kg = _num(row[10])
+            workers = int(_num(row[9]))
+            base_step = _strip_batch(comp)
+            menu = current_menu or "Unknown"
+
+            meals.setdefault(menu, {})
+            meals[menu].setdefault(base_step, {
+                "section": current_section or "",
+                "batches": 0,
+                "total_minutes": 0.0,
+                "total_kg": 0.0,
+                "workers": 0,
+                "machines": {m: 0.0 for _, m in MACHINE_COLS},
+            })
+
+            step = meals[menu][base_step]
+            step["batches"] += 1
+            step["total_minutes"] += time_use_min
+            step["total_kg"] += output_kg
+            step["workers"] = max(step["workers"], workers)
+
+            row_len = len(row)
+            for col_idx, machine_name in MACHINE_COLS:
+                if col_idx < row_len:
+                    step["machines"][machine_name] += _num(row[col_idx])
+
+        # Serialise to list, drop machines with zero usage
+        meals_out = {}
+        for meal, steps in meals.items():
+            steps_list = []
+            for step_name, d in steps.items():
+                active_machines = [
+                    {"name": k, "minutes": round(v, 1)}
+                    for k, v in d["machines"].items()
+                    if v > 0
+                ]
+                steps_list.append({
+                    "name": step_name,
+                    "section": d["section"],
+                    "batches": d["batches"],
+                    "total_minutes": round(d["total_minutes"], 1),
+                    "total_kg": round(d["total_kg"], 2),
+                    "workers": d["workers"],
+                    "machines": active_machines,
+                })
+
+            meals_out[meal] = {
+                "steps": steps_list,
+                "step_count": len(steps_list),
+                "total_kg": round(sum(s["total_kg"] for s in steps_list), 2),
+                "total_minutes": round(sum(s["total_minutes"] for s in steps_list), 1),
+            }
+
+        result[sheet_name] = meals_out
+
+    return result
+
 
 # ── Pages ──────────────────────────────────────────────────────────────────────
 
 @app.route("/")
-def trial_run():
-    return render_template("trial_run.html")
+def index():
+    return redirect(url_for("trial_stages"))
 
 
 @app.route("/trial-stage-breakdown")
 def trial_stages():
     return render_template("trial_stages.html")
+
+
+@app.route("/cooking-analysis")
+def cooking_analysis():
+    return render_template("cooking_analysis.html")
 
 
 # ── Data API ───────────────────────────────────────────────────────────────────
@@ -30,6 +188,18 @@ def trial_stages():
 def trial_run_data():
     with open(DATA_DIR / "trial_run_data.json", encoding="utf-8") as f:
         return jsonify(json.load(f))
+
+
+@app.route("/api/lr-machine-data")
+def lr_machine_data():
+    path = DATA_DIR / "LR_stage2_march.xlsx"
+    if not path.exists():
+        return jsonify({"error": "Excel file not found"}), 404
+    try:
+        return jsonify(_parse_lr_excel(str(path)))
+    except Exception as e:
+        app.logger.error("Excel parse error: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
 # ── AI Help ────────────────────────────────────────────────────────────────────

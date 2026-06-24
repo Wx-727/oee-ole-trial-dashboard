@@ -10,10 +10,6 @@
         <p class="eyebrow">OEE and OLE Analysis</p>
         <h2>Stage 2 Trial Stage Breakdown</h2>
     </div>
-    <div class="trial-run-toggle-row">
-        <a class="trial-run-btn is-live" href="{{ url_for('trial_run') }}">Trial Run Overview</a>
-        <a class="trial-run-btn is-active" href="{{ url_for('trial_stages') }}">Trial Stage View</a>
-    </div>
 </section>
 
 <article class="card" id="trialStageFilterCard"></article>
@@ -34,5 +30,5 @@
 
 <article class="card" id="trialStageFlowCard"></article>
 
-<script src="{{ url_for('static', filename='js/oee_ole_trial_stages_page.js') }}?v=27"></script>
+<script src="{{ url_for('static', filename='js/oee_ole_trial_stages_page.js') }}?v=30"></script>
 {% endblock %}
