@@ -17,14 +17,13 @@
                 <img src="{{ url_for('static', filename='images/sats_logo.png') }}" alt="SATS" class="brand-logo__img">
             </div>
             <div>
-                <p class="eyebrow">OEE and OLE Analysis</p>
-                <h1 class="app-title">Stage 2 Trial Run — March 2026</h1>
+                <h1 class="app-title">OEE and OLE Analysis</h1>
             </div>
         </div>
     </header>
 
     <nav class="subnav">
-        <a href="{{ url_for('trial_stages') }}" class="subnav__link {% block nav_trial_stages %}{% endblock %}">Trial Stage Breakdown</a>
+        <a href="{{ url_for('trial_stages') }}" class="subnav__link {% block nav_trial_stages %}{% endblock %}">OEE OLE analysis</a>
         {# LR Cooking Analysis hidden from nav (route still available at /cooking-analysis)
         <a href="{{ url_for('cooking_analysis') }}" class="subnav__link {% block nav_cooking %}{% endblock %}">LR Cooking Analysis</a>
         #}
