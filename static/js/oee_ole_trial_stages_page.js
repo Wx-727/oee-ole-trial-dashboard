@@ -21,8 +21,16 @@
 
     const ALL_DATES_VALUE = "all";
     const MEAL_WEIGHT_KG = 0.3;
-    const HIDDEN_TRIAL_DATE_LABELS = new Set(["24 Mar"]);
-    const HIDDEN_TRIAL_DATE_ISO = new Set(["2026-03-24"]);
+    // OEE/OLE analysis is scoped to the Stage 2 trial window 25–28 Mar 2026,
+    // regardless of any extra dates present in an uploaded workbook.
+    const ALLOWED_TRIAL_DATES = [
+        { iso: "2026-03-25", label: "25 Mar" },
+        { iso: "2026-03-26", label: "26 Mar" },
+        { iso: "2026-03-27", label: "27 Mar" },
+        { iso: "2026-03-28", label: "28 Mar" },
+    ];
+    const ALLOWED_TRIAL_DATE_ISO = new Set(ALLOWED_TRIAL_DATES.map((d) => d.iso));
+    const ALLOWED_TRIAL_DATE_LABELS = new Set(ALLOWED_TRIAL_DATES.map((d) => d.label));
 
     function esc(value) {
         return String(value ?? "")
@@ -82,6 +90,103 @@
         return "9h planned | 7.5h run | 80% rate | 0% reject";
     }
 
+    // Throughput: good meals assembled per hour of active assembly time.
+    // Null when the meal row has no recorded assembly time (e.g. 25 Mar).
+    function mealsPerHour(row) {
+        const meals = Number(row.assembled);
+        const mins = Number(row.assembly_time_min);
+        return Number.isFinite(meals) && Number.isFinite(mins) && mins > 0
+            ? meals / (mins / 60)
+            : null;
+    }
+
+    // Non-assembly time itemised into cleaning / bake-down / set-up. Returns an
+    // HTML snippet "Nm (Clean a, Bake b, Set-up c)" or "—" when none recorded.
+    function formatDowntime(row) {
+        const parts = [];
+        if (Number(row.cleaning_min) > 0) parts.push(`Clean ${num(row.cleaning_min)}`);
+        if (Number(row.bake_down_min) > 0) parts.push(`Bake ${num(row.bake_down_min)}`);
+        if (Number(row.setup_min) > 0) parts.push(`Set-up ${num(row.setup_min)}`);
+        if (!parts.length) return "—";
+        const total = (Number(row.cleaning_min) || 0) + (Number(row.bake_down_min) || 0) + (Number(row.setup_min) || 0);
+        return `${formatMinutes(total)} <small>(${parts.join(", ")})</small>`;
+    }
+
+    // Pool the measured-assembly rows into single Availability / Performance /
+    // Quality factors (Σ numerator / Σ denominator) for the total-factor method:
+    //   Availability = Σ assembly time / Σ window
+    //   Performance  = Σ good output  / Σ ideal output (ideal = assembled / perf)
+    //   Quality      = Σ assembled    / Σ ordered
+    function pooledAssemblyFactors(rows) {
+        let runMin = 0, windowMin = 0, ordered = 0, assembled = 0, idealOutput = 0;
+        (rows || []).forEach((row) => {
+            const at = Number(row.assembly_time_min);
+            const tw = Number(row.total_window_min);
+            const ord = Number(row.ordered);
+            const asm = Number(row.assembled);
+            const perf = Number(row.performance);
+            if (Number.isFinite(at) && Number.isFinite(tw)) { runMin += at; windowMin += tw; }
+            if (Number.isFinite(ord)) ordered += ord;
+            if (Number.isFinite(asm)) assembled += asm;
+            if (Number.isFinite(perf) && perf > 0 && Number.isFinite(asm)) idealOutput += asm / perf;
+        });
+        return {
+            availability: windowMin > 0 ? runMin / windowMin : null,
+            performance: idealOutput > 0 ? assembled / idealOutput : null,
+            quality: ordered > 0 ? assembled / ordered : null,
+        };
+    }
+
+    // Packing labour Utilisation pooled across sessions: Σ productive man-min /
+    // Σ available man-min. Optionally scoped to a single trial date.
+    function pooledPackingUtilization(report, dateLabel) {
+        let rows = ((report.packing && report.packing.utilization) || [])
+            .filter((row) => isVisibleTrialDateLabel(row.date));
+        if (dateLabel && dateLabel !== ALL_DATES_VALUE) {
+            rows = rows.filter((row) => row.date === dateLabel);
+        }
+        let prod = 0, avail = 0;
+        rows.forEach((row) => {
+            const p = Number(row.man_min_productive);
+            const a = Number(row.man_min_available);
+            if (Number.isFinite(p)) prod += p;
+            if (Number.isFinite(a)) avail += a;
+        });
+        return avail > 0 ? prod / avail : null;
+    }
+
+    // Packing Availability pooled: Σ productive packing time / Σ total time.
+    function pooledPackingAvailability(report, dateLabel) {
+        let rows = ((report.packing && report.packing.utilization) || [])
+            .filter((row) => isVisibleTrialDateLabel(row.date));
+        if (dateLabel && dateLabel !== ALL_DATES_VALUE) {
+            rows = rows.filter((row) => row.date === dateLabel);
+        }
+        let run = 0, total = 0;
+        rows.forEach((row) => {
+            const r = Number(row.productive_time_min);
+            const t = Number(row.window_min);
+            if (Number.isFinite(r)) run += r;
+            if (Number.isFinite(t)) total += t;
+        });
+        return total > 0 ? run / total : null;
+    }
+
+    // Packing Activation pooled: Σ activated headcount / Σ scheduled headcount.
+    function pooledPackingActivation(report, dateLabel) {
+        let rows = ((report.packing && report.packing.headcount) || [])
+            .filter((row) => isVisibleTrialDateLabel(row.date));
+        if (dateLabel && dateLabel !== ALL_DATES_VALUE) {
+            rows = rows.filter((row) => row.date === dateLabel);
+        }
+        let activated = 0, scheduled = 0;
+        rows.forEach((row) => {
+            activated += Number(row.activated) || 0;
+            scheduled += Number(row.scheduled) || 0;
+        });
+        return scheduled > 0 ? activated / scheduled : null;
+    }
+
     function formatMinutes(value) {
         const n = Number(value);
         if (!Number.isFinite(n) || n <= 0) return "N/A";
@@ -111,11 +216,11 @@
     }
 
     function isVisibleTrialDateLabel(label) {
-        return !HIDDEN_TRIAL_DATE_LABELS.has(String(label || "").trim());
+        return ALLOWED_TRIAL_DATE_LABELS.has(String(label || "").trim());
     }
 
     function isVisibleTrialDateIso(dateValue) {
-        return !HIDDEN_TRIAL_DATE_ISO.has(String(dateValue || "").trim());
+        return ALLOWED_TRIAL_DATE_ISO.has(String(dateValue || "").trim());
     }
 
     function normalizeProductKey(name) {
@@ -310,7 +415,10 @@
                 bucket.stepOrder.push(stepKey);
             }
             const step = bucket.stepMap[stepKey];
-            step.batches += 1;
+            // trial_run_data has one row per batch (no .batches); the uploaded LR
+            // workbook merges batches per step and carries the real count.
+            const taskBatches = Number(task.batches || 1);
+            step.batches += taskBatches;
             step.duration += Number(task.duration_min || 0);
             step.kg += Number(task.kg_output || 0);
             if (task.shiftLabel) step.shiftLabels.add(task.shiftLabel);
@@ -318,8 +426,11 @@
                 if (!step.machineMinutes[machine]) {
                     step.machineMinutes[machine] = { minutes: 0, batches: 0 };
                 }
+                const machineBatches = task.machineBatches && task.machineBatches[machine] != null
+                    ? Number(task.machineBatches[machine])
+                    : taskBatches;
                 step.machineMinutes[machine].minutes += Number(mins || 0);
-                step.machineMinutes[machine].batches += 1;
+                step.machineMinutes[machine].batches += machineBatches;
             });
             bucket.totalKg += Number(task.kg_output || 0);
             bucket.totalDuration += Number(task.duration_min || 0);
@@ -348,6 +459,76 @@
                 }),
             }))
             .sort((a, b) => b.totalKg - a.totalKg || a.menu.localeCompare(b.menu));
+    }
+
+    // ── Cooking section from the uploaded LR workbook ───────────────────────────
+    // Used only when a cooking file has been uploaded. Maps the parsed LR rows
+    // (per date/menu/step, batches merged) into the same task/group shape the
+    // Cooking section already renders, so the existing render code is unchanged.
+    function lrToCookingTask(t) {
+        const machines = {};
+        const machineBatches = {};
+        Object.entries(t.machines || {}).forEach(([name, v]) => {
+            machines[name] = Number(v.minutes || 0);
+            machineBatches[name] = Number(v.batches || 0);
+        });
+        return {
+            menu: t.menu,
+            component: t.step,
+            start: t.start || "",
+            stop: t.stop || "",
+            duration_min: Number(t.duration_min || 0),
+            workers: Number(t.workers || 0),
+            kg_output: Number(t.kg || 0),
+            kg_man_hr: Number(t.kg_man_hr || 0),
+            machines,
+            machineBatches,
+            batches: Number(t.batches || 1),
+            shiftLabel: "",
+        };
+    }
+
+    // dateLabelByIso: Map(iso -> display label) for the dates already on the page;
+    // restricts the LR data to those dates and reuses their labels so the global
+    // date filter stays aligned with the other stages.
+    function buildLrGroupsFromUpload(lrData, dateLabelByIso, stage) {
+        const map = {};
+        (lrData.tasks || []).forEach((t) => {
+            if (t.stage !== stage) return;
+            if (!dateLabelByIso.has(t.date)) return;
+            if (!map[t.date]) {
+                map[t.date] = {
+                    key: t.date,
+                    label: dateLabelByIso.get(t.date),
+                    date: t.date,
+                    totalKg: 0,
+                    totalDuration: 0,
+                    weightedKgManHr: 0,
+                    peakWorkers: 0,
+                    menus: new Set(),
+                    tasks: [],
+                };
+            }
+            const bucket = map[t.date];
+            const task = lrToCookingTask(t);
+            bucket.totalKg += task.kg_output;
+            bucket.totalDuration += task.duration_min;
+            bucket.weightedKgManHr += Number.isFinite(task.kg_man_hr)
+                ? task.kg_man_hr * Math.max(task.duration_min, 1) : 0;
+            bucket.peakWorkers = Math.max(bucket.peakWorkers, task.workers);
+            bucket.menus.add(shortProduct(task.menu));
+            bucket.tasks.push(task);
+        });
+        return Object.values(map)
+            .map((group) => ({
+                ...group,
+                avgKgManHr: group.totalDuration > 0 ? group.weightedKgManHr / group.totalDuration : null,
+                machineSummary: aggregateMachineMinutes(group.tasks),
+                machineUsage: aggregateMachineUsage(group.tasks),
+                shiftLabels: ["Uploaded workbook"],
+                menus: Array.from(group.menus).filter(Boolean).sort(),
+            }))
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)));
     }
 
     function buildLrStageDateGroups(trialData, stageKey) {
@@ -410,15 +591,17 @@
     }
 
     function buildAssemblyProducts(report) {
-        return (report.assembly.rows || []).map((row, index) => ({
-            ...row,
-            index,
-            key: `${row.date}__${row.lot}__${row.menu}`,
-            label: `${row.date} - ${shortProduct(row.menu)}`,
-            ole: Number.isFinite(Number(row.availability)) && Number.isFinite(Number(row.performance))
-                ? Number(row.availability) * Number(row.performance)
-                : null,
-        }));
+        return (report.assembly.rows || [])
+            .filter((row) => isVisibleTrialDateLabel(row.date))
+            .map((row, index) => ({
+                ...row,
+                index,
+                key: `${row.date}__${row.lot}__${row.menu}`,
+                label: `${row.date} - ${shortProduct(row.menu)}`,
+                ole: Number.isFinite(Number(row.availability)) && Number.isFinite(Number(row.performance))
+                    ? Number(row.availability) * Number(row.performance)
+                    : null,
+            }));
     }
 
     function buildAssemblyDateGroups(report, trialData) {
@@ -807,6 +990,146 @@
         });
     }
 
+    // ── End-to-end timing (Production Flow) ─────────────────────────────────────
+    // Span = earliest shown prep start → latest packing stop, for single-cycle
+    // meals only. 24 Mar pre-trial prep is already excluded from product.lr_tasks.
+    const FLOW_MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+    const FLOW_MON_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    // "N 24 Mar" / "26 Mar" → { month, day, night }
+    function parseFlowDate(label) {
+        const s = String(label || "");
+        const m = s.match(/(\d{1,2})\s*([A-Za-z]{3})/);
+        const mon = m ? FLOW_MONTHS[m[2].toLowerCase()] : null;
+        return mon ? { month: mon, day: parseInt(m[1], 10), night: /^\s*N\b/i.test(s) } : null;
+    }
+
+    // Clock string ("~01:30(+1)", "19:20") + base date → Date. Night-shift morning
+    // times (before noon on an N sheet) and explicit "(+1)" roll to the next day.
+    function parseFlowDateTime(baseDate, timeStr, isNight) {
+        const s = String(timeStr || "");
+        const t = s.match(/(\d{1,2}):(\d{2})/);
+        if (!t || !baseDate) return null;
+        const hh = parseInt(t[1], 10);
+        const mm = parseInt(t[2], 10);
+        let dayOffset = 0;
+        if (isNight && hh < 12) dayOffset += 1;
+        if (s.includes("(+1)")) dayOffset += 1;
+        return new Date(2026, baseDate.month - 1, baseDate.day + dayOffset, hh, mm);
+    }
+
+    function formatFlowStamp(date) {
+        return `${date.getDate()} ${FLOW_MON_LABELS[date.getMonth()]} `
+            + `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function formatFlowSpan(ms) {
+        const mins = Math.round(ms / 60000);
+        const d = Math.floor(mins / 1440);
+        const h = Math.floor((mins % 1440) / 60);
+        const m = mins % 60;
+        return d > 0
+            ? `${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m`
+            : `${h}h ${String(m).padStart(2, "0")}m`;
+    }
+
+    function flowDayOrdinal(d) {
+        return d.month * 31 + d.day;
+    }
+
+    // One packing cycle: prep tasks dated after the previous packing day and up to
+    // this one (prevOrd → packDay) feed it; span = earliest such prep → last pack
+    // stop on that day. Falls back to pack-only when no prep lands in the window.
+    function flowCycleSpan(product, mr, packDay, prevOrd) {
+        const packTimes = (key) => {
+            const out = [];
+            mr.forEach((row) => {
+                if (row.date !== packDay.label) return;
+                const v = row[key];
+                if (v === "-" || v == null || v === "") return;
+                const x = parseFlowDateTime(packDay.d, v, false);
+                if (x) out.push(x);
+            });
+            return out;
+        };
+        const stops = packTimes("stop");
+        if (!stops.length) return { date: packDay.label, status: "na" };
+        const last = new Date(Math.max.apply(null, stops));
+
+        const ord = flowDayOrdinal(packDay.d);
+        const winStarts = [];
+        (product.lr_tasks || []).forEach((task) => {
+            const d = parseFlowDate(task.sheet);
+            if (!d) return;
+            const taskOrd = flowDayOrdinal(d);
+            if ((prevOrd === null || taskOrd > prevOrd) && taskOrd <= ord) {
+                const x = parseFlowDateTime(d, task.start, d.night);
+                if (x) winStarts.push(x);
+            }
+        });
+
+        let first;
+        let packOnly = false;
+        if (winStarts.length) {
+            first = new Date(Math.min.apply(null, winStarts));
+        } else {
+            const packStarts = packTimes("start");
+            if (!packStarts.length) return { date: packDay.label, status: "na" };
+            first = new Date(Math.min.apply(null, packStarts));
+            packOnly = true;
+        }
+        return {
+            date: packDay.label,
+            status: "ok",
+            from: first,
+            to: last,
+            duration: formatFlowSpan(last - first),
+            packOnly,
+            inconsistent: winStarts.some((s) => s > last),
+        };
+    }
+
+    function flowEndToEnd(product) {
+        const mr = product.mr || [];
+        const packDays = Array.from(new Set(mr.map((row) => row.date).filter(Boolean)))
+            .map((label) => ({ label, d: parseFlowDate(label) }))
+            .filter((p) => p.d)
+            .sort((a, b) => flowDayOrdinal(a.d) - flowDayOrdinal(b.d));
+        if (!packDays.length) return { status: "na", reason: "No packing times recorded" };
+
+        if (packDays.length === 1) {
+            const c = flowCycleSpan(product, mr, packDays[0], null);
+            return c.status === "ok"
+                ? { status: "ok", from: c.from, to: c.to, duration: c.duration, inconsistent: c.inconsistent }
+                : { status: "na", reason: "No packing times recorded" };
+        }
+
+        const cycles = [];
+        let prevOrd = null;
+        packDays.forEach((packDay) => {
+            cycles.push(flowCycleSpan(product, mr, packDay, prevOrd));
+            prevOrd = flowDayOrdinal(packDay.d);
+        });
+        return { status: "multi", cycles };
+    }
+
+    function flowE2EDisplay(e2e) {
+        if (e2e.status === "ok") {
+            return {
+                value: e2e.duration,
+                detail: `First prep ${formatFlowStamp(e2e.from)} → last pack ${formatFlowStamp(e2e.to)}`
+                    + (e2e.inconsistent ? " ⚠ source times inconsistent" : ""),
+            };
+        }
+        if (e2e.status === "multi") {
+            const parts = e2e.cycles.map((c) => c.status === "ok"
+                ? `${c.date}: ${c.duration}${c.packOnly ? " (pack only)" : ""}${c.inconsistent ? " ⚠" : ""}`
+                : `${c.date}: N/A`);
+            return { value: "By packing day", detail: parts.join("   ·   ") };
+        }
+        return { value: "N/A", detail: e2e.reason };
+    }
+
     function findQualityFactor(report, assemblyRow) {
         const factors = (report.quality && report.quality.quality_factors) || [];
         const rowKey = normalizeProductKey(assemblyRow.menu);
@@ -859,20 +1182,37 @@
         if (!target) return;
 
         const assemblyRows = buildAssemblyProducts(report).filter((row) => row.oee !== null);
+        // Per-stage values are kept for the factor breakdown and the AI context.
         const assemblyOee = weightedAvg(assemblyRows, (row) => row.oee, (row) => row.ordered || row.assembled || 0);
         const assemblyOle = weightedAvg(assemblyRows, (row) => row.ole, (row) => row.ordered || row.assembled || 0);
         const packingOle = avg((packingDateGroups || []).map((group) => group.ole));
         const foodPrepOee = proxyOee();
         const cookingOee = proxyOee();
         const packingOee = proxyOee();
-        const facilityOee = avg([foodPrepOee, cookingOee, assemblyOee, packingOee]);
-        const facilityOle = weightedAvg([
-            { value: proxyOle(), weight: STAFF_ASSUMPTION.batching },
-            { value: proxyOle(), weight: STAFF_ASSUMPTION.lowRisk },
-            { value: assemblyOle, weight: STAFF_ASSUMPTION.highRisk },
-            { value: packingOle, weight: STAFF_ASSUMPTION.mediumRisk },
-        ], (row) => row.value, (row) => row.weight);
-        const packingPartialOle = packingOle;
+
+        // ── Total-factor facility roll-up ───────────────────────────────────────
+        // Combine each underlying factor across the 4 stages first, then multiply
+        // once — instead of averaging the already-multiplied stage OEE/OLE values.
+        // Assembly factors are pooled from the measured rows; Food Prep, Cooking
+        // and Packing use the shared proxy assumptions (Packing Utilisation is
+        // the one measured packing factor).
+        const aFac = pooledAssemblyFactors(assemblyRows);
+        const packingUtil = pooledPackingUtilization(report);
+        const proxyA = proxyAvailability();
+
+        const totalAvailability = avg([proxyA, proxyA, aFac.availability, proxyA]);
+        const totalPerformance  = avg([PROXY_ASSUMPTION.performancePct, PROXY_ASSUMPTION.performancePct, aFac.performance, PROXY_ASSUMPTION.performancePct]);
+        const totalQuality      = avg([PROXY_ASSUMPTION.qualityPct, PROXY_ASSUMPTION.qualityPct, aFac.quality, PROXY_ASSUMPTION.qualityPct]);
+        const facilityOee = [totalAvailability, totalPerformance, totalQuality].every((v) => Number.isFinite(Number(v)))
+            ? totalAvailability * totalPerformance * totalQuality
+            : null;
+
+        const totalActivation   = avg([STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct]);
+        const totalUtilisation  = avg([PROXY_ASSUMPTION.utilizedLabourPct, PROXY_ASSUMPTION.utilizedLabourPct, aFac.availability, packingUtil]);
+        const totalProductivity = avg([PROXY_ASSUMPTION.productivityPct, PROXY_ASSUMPTION.productivityPct, aFac.performance, PROXY_ASSUMPTION.productivityPct]);
+        const facilityOle = [totalActivation, totalUtilisation, totalProductivity].every((v) => Number.isFinite(Number(v)))
+            ? totalActivation * totalUtilisation * totalProductivity
+            : null;
 
         window.PAGE_KPI = {
             page: "oee-trial-stages",
@@ -891,7 +1231,7 @@
                 assembly: assemblyOle !== null ? Math.round(assemblyOle * 1000) / 10 : null,
                 packing: packingOle !== null ? Math.round(packingOle * 1000) / 10 : null,
             },
-            method: "Facility OEE = simple average of 4 stages. Facility OLE = headcount-weighted blend (batching+low_risk+assembly+packing headcounts).",
+            method: "Total-factor method. Facility OEE = (avg Availability) x (avg Performance) x (avg Quality) across the 4 stages. Facility OLE = (avg Activation) x (avg Utilisation) x (avg Productivity). Assembly factors are pooled from measured rows; the other stages use proxy assumptions.",
         };
         const worstOeeRow = [...assemblyRows].sort((a, b) => Number(a.oee) - Number(b.oee))[0] || null;
         const worstOleRow = [...assemblyRows]
@@ -930,16 +1270,16 @@
         const cards = [
             {
                 tone: "amber",
-                label: "Average Facility OEE",
+                label: "Facility OEE (Total-Factor)",
                 value: pct(facilityOee),
-                sub: `Food Prep ${pct(foodPrepOee)} | Cooking ${pct(cookingOee)} | Assembly ${pct(assemblyOee)} | Packing ${pct(packingOee)}`,
+                sub: `Total-factor: Avail ${pct(totalAvailability)} × Perf ${pct(totalPerformance)} × Qual ${pct(totalQuality)}`,
                 badge: sourceBadge("Proxy", "proxy"),
             },
             {
                 tone: "green",
-                label: "Overall Facility OLE",
+                label: "Facility OLE (Total-Factor)",
                 value: pct(facilityOle),
-                sub: `Derived from assembly availability x performance. Packing partial OLE context ${pct(packingPartialOle)}.`,
+                sub: `Total-factor: Activation ${pct(totalActivation)} × Util ${pct(totalUtilisation)} × Prod ${pct(totalProductivity)}`,
                 badge: sourceBadge("Derived", "derived"),
             },
             {
@@ -961,16 +1301,16 @@
         const summaryCards = [
             {
                 tone: "amber",
-                label: "Average Facility OEE",
+                label: "Facility OEE (Total-Factor)",
                 value: pct(facilityOee),
-                sub: `Food Prep ${pct(foodPrepOee)} | Cooking ${pct(cookingOee)} | Assembly ${pct(assemblyOee)} | Packing ${pct(packingOee)}`,
+                sub: `Total-factor: Avail ${pct(totalAvailability)} × Perf ${pct(totalPerformance)} × Qual ${pct(totalQuality)}`,
                 badge: sourceBadge("Hybrid", "derived"),
             },
             {
                 tone: "green",
-                label: "Overall Facility OLE",
+                label: "Facility OLE (Total-Factor)",
                 value: pct(facilityOle),
-                sub: "Headcount-weighted blend with packing OLE using measured utilization x 75% productivity.",
+                sub: `Total-factor: Activation ${pct(totalActivation)} × Util ${pct(totalUtilisation)} × Prod ${pct(totalProductivity)}`,
                 badge: sourceBadge("Hybrid", "derived"),
             },
             {
@@ -1329,6 +1669,7 @@
                                 <th>Actual Rate</th>
                                 <th>Plan Window</th>
                                 <th>Assembly Time</th>
+                                <th>Meals/hr</th>
                                 <th>Total Window</th>
                                 <th>Availability</th>
                                 <th>Performance</th>
@@ -1344,6 +1685,7 @@
                                     <td>${row.actual_tray_min !== null ? `${num(row.actual_tray_min, 1)} t/m` : "N/R"}</td>
                                     <td>${formatMinutes(row.plan_window_min)}</td>
                                     <td>${row.assembly_time_min !== null ? formatMinutes(row.assembly_time_min) : "N/R"}</td>
+                                    <td>${mealsPerHour(row) !== null ? `${num(Math.round(mealsPerHour(row)))} /hr` : "N/R"}</td>
                                     <td>${row.total_window_min !== null ? formatMinutes(row.total_window_min) : "N/R"}</td>
                                     <td>${pct(row.availability)}</td>
                                     <td>${pct(row.performance)}</td>
@@ -1736,19 +2078,40 @@
         const filteredPackingGroups = (packingDateGroups || []).filter((group) =>
             selectedDateLabel === ALL_DATES_VALUE || (group.dateLabel || group.label) === selectedDateLabel
         );
+        // Per-stage values are kept for the factor breakdown and the AI context.
         const assemblyOee = weightedAvg(assemblyRows, (row) => row.oee, (row) => row.ordered || row.assembled || 0);
         const assemblyOle = weightedAvg(assemblyRows, (row) => row.ole, (row) => row.ordered || row.assembled || 0);
         const packingOle = avg(filteredPackingGroups.map((group) => group.ole));
         const foodPrepOee = proxyOee();
         const cookingOee = proxyOee();
         const packingOee = proxyOee();
-        const facilityOee = avg([foodPrepOee, cookingOee, assemblyOee, packingOee]);
-        const facilityOle = weightedAvg([
-            { value: proxyOle(), weight: STAFF_ASSUMPTION.batching },
-            { value: proxyOle(), weight: STAFF_ASSUMPTION.lowRisk },
-            { value: assemblyOle, weight: STAFF_ASSUMPTION.highRisk },
-            { value: packingOle, weight: STAFF_ASSUMPTION.mediumRisk },
-        ], (row) => row.value, (row) => row.weight);
+
+        // ── Total-factor facility roll-up (scoped to the selected date) ─────────
+        const aFac = pooledAssemblyFactors(assemblyRows);
+        const packingUtil = pooledPackingUtilization(report, selectedDateLabel);
+        const proxyA = proxyAvailability();
+
+        // Packing Availability + Activation become measured only when an MR
+        // workbook is uploaded; Performance/Productivity/Quality stay proxy.
+        const packingMeasured = report.packing && report.packing.source === "uploaded";
+        const packingAvail = packingMeasured
+            ? pooledPackingAvailability(report, selectedDateLabel) : proxyA;
+        const packingActivation = packingMeasured
+            ? pooledPackingActivation(report, selectedDateLabel) : STAFF_ASSUMPTION.attendancePct;
+
+        const totalAvailability = avg([proxyA, proxyA, aFac.availability, packingAvail]);
+        const totalPerformance  = avg([PROXY_ASSUMPTION.performancePct, PROXY_ASSUMPTION.performancePct, aFac.performance, PROXY_ASSUMPTION.performancePct]);
+        const totalQuality      = avg([PROXY_ASSUMPTION.qualityPct, PROXY_ASSUMPTION.qualityPct, aFac.quality, PROXY_ASSUMPTION.qualityPct]);
+        const facilityOee = [totalAvailability, totalPerformance, totalQuality].every((v) => Number.isFinite(Number(v)))
+            ? totalAvailability * totalPerformance * totalQuality
+            : null;
+
+        const totalActivation   = avg([STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct, packingActivation]);
+        const totalUtilisation  = avg([PROXY_ASSUMPTION.utilizedLabourPct, PROXY_ASSUMPTION.utilizedLabourPct, aFac.availability, packingUtil]);
+        const totalProductivity = avg([PROXY_ASSUMPTION.productivityPct, PROXY_ASSUMPTION.productivityPct, aFac.performance, PROXY_ASSUMPTION.productivityPct]);
+        const facilityOle = [totalActivation, totalUtilisation, totalProductivity].every((v) => Number.isFinite(Number(v)))
+            ? totalActivation * totalUtilisation * totalProductivity
+            : null;
 
         window.PAGE_KPI = {
             page: "oee-trial-stages",
@@ -1767,7 +2130,7 @@
                 assembly: assemblyOle !== null ? Math.round(assemblyOle * 1000) / 10 : null,
                 packing: packingOle !== null ? Math.round(packingOle * 1000) / 10 : null,
             },
-            method: "Facility OEE = simple average of 4 stages. Facility OLE = headcount-weighted blend (batching+low_risk+assembly+packing headcounts).",
+            method: "Total-factor method. Facility OEE = (avg Availability) x (avg Performance) x (avg Quality) across the 4 stages. Facility OLE = (avg Activation) x (avg Utilisation) x (avg Productivity). Assembly factors are pooled from measured rows; the other stages use proxy assumptions.",
         };
 
         const quality = report.quality || {};
@@ -1801,17 +2164,17 @@
         const summaryCards = [
             {
                 tone: "amber",
-                label: "Average Facility OEE",
+                label: "Facility OEE (Total-Factor)",
                 value: pct(facilityOee),
-                sub: `${label} | Food Prep ${pct(foodPrepOee)} | Cooking ${pct(cookingOee)} | Assembly ${pct(assemblyOee)} | Packing ${pct(packingOee)}`,
-                badge: sourceBadge("Hybrid", "derived"),
+                sub: `${label} | Avail ${pct(totalAvailability)} × Perf ${pct(totalPerformance)} × Qual ${pct(totalQuality)}`,
+                badge: sourceBadge("Total-Factor", "derived"),
             },
             {
                 tone: "green",
-                label: "Overall Facility OLE",
+                label: "Facility OLE (Total-Factor)",
                 value: pct(facilityOle),
-                sub: `${label} | headcount-weighted blend with packing OLE using measured utilization x 75% productivity.`,
-                badge: sourceBadge("Hybrid", "derived"),
+                sub: `${label} | Activation ${pct(totalActivation)} × Util ${pct(totalUtilisation)} × Prod ${pct(totalProductivity)}`,
+                badge: sourceBadge("Total-Factor", "derived"),
             },
             {
                 tone: "red",
@@ -2108,7 +2471,7 @@
                 <div class="trial-stage-collapse__body">
                     <div class="oee-table-wrap">
                         <table class="data-table oee-mini-table">
-                            <thead><tr><th>Meal</th><th>Lot</th><th>Plan Rate</th><th>Actual Rate</th><th>Plan Window</th><th>Assembly Time</th><th>Total Window</th><th>Availability</th><th>Performance</th><th>Quality</th></tr></thead>
+                            <thead><tr><th>Meal</th><th>Lot</th><th>Plan Rate</th><th>Actual Rate</th><th>Plan Window</th><th>Assembly Time</th><th>Meals/hr</th><th>Total Window</th><th>Downtime</th><th>Availability</th><th>Performance</th><th>Quality</th></tr></thead>
                             <tbody>
                                 ${group.rows.map((row) => `
                                     <tr>
@@ -2118,7 +2481,9 @@
                                         <td>${row.actual_tray_min !== null ? `${num(row.actual_tray_min, 1)} t/m` : "N/R"}</td>
                                         <td>${formatMinutes(row.plan_window_min)}</td>
                                         <td>${row.assembly_time_min !== null ? formatMinutes(row.assembly_time_min) : "N/R"}</td>
+                                        <td>${mealsPerHour(row) !== null ? `${num(Math.round(mealsPerHour(row)))} /hr` : "N/R"}</td>
                                         <td>${row.total_window_min !== null ? formatMinutes(row.total_window_min) : "N/R"}</td>
+                                        <td>${formatDowntime(row)}</td>
                                         <td>${pct(row.availability)}</td>
                                         <td>${pct(row.performance)}</td>
                                         <td>${pct(row.quality)}</td>
@@ -2171,19 +2536,38 @@
             detail.innerHTML = renderUnavailableKpi("Packing", "No Packing data exists for the selected date.");
             return;
         }
-        const utilization = avg(group.utilizationRows.map((row) => row.utilization));
-        const ole = Number.isFinite(Number(group.partialOle)) ? Number(group.partialOle) * PROXY_ASSUMPTION.productivityPct : null;
+        // When an MR workbook is uploaded, Packing Availability + Activation +
+        // Utilisation are measured; Performance/Quality/Productivity stay proxy.
+        const packingMeasured = report.packing && report.packing.source === "uploaded";
+        const packAvail = packingMeasured ? pooledPackingAvailability(report, selectedDateLabel) : proxyAvailability();
+        const packAct = packingMeasured ? pooledPackingActivation(report, selectedDateLabel) : STAFF_ASSUMPTION.attendancePct;
+        const utilization = packingMeasured
+            ? pooledPackingUtilization(report, selectedDateLabel)
+            : avg(group.utilizationRows.map((row) => row.utilization));
+        const packOee = Number.isFinite(Number(packAvail))
+            ? packAvail * PROXY_ASSUMPTION.performancePct * PROXY_ASSUMPTION.qualityPct
+            : proxyOee();
+        const ole = packingMeasured
+            ? (Number.isFinite(Number(packAct)) && Number.isFinite(Number(utilization))
+                ? packAct * utilization * PROXY_ASSUMPTION.productivityPct : null)
+            : (Number.isFinite(Number(group.partialOle)) ? Number(group.partialOle) * PROXY_ASSUMPTION.productivityPct : null);
+        const packOeeDetail = packingMeasured
+            ? `Avail ${pct(packAvail)} measured x Perf 80% x Qual 100%`
+            : proxyAssumptionLabel();
+        const packOleDetail = packingMeasured
+            ? `Activation ${pct(packAct)} x Util ${pct(utilization)} x 75% productivity`
+            : "Activation 100% x utilization x 75% productivity";
         detail.innerHTML = `
             <div class="oee-trial-comparison-grid" style="margin-bottom:14px">
-                <div class="oee-gap-card"><span class="oee-gap-card__label">Packing OEE</span><strong class="oee-gap-card__value">${pct(proxyOee())}</strong><span class="oee-gap-card__detail">${proxyAssumptionLabel()}</span></div>
-                <div class="oee-gap-card"><span class="oee-gap-card__label">Packing OLE</span><strong class="oee-gap-card__value">${pct(ole)}</strong><span class="oee-gap-card__detail">Activation 100% x utilization x 75% productivity</span></div>
+                <div class="oee-gap-card"><span class="oee-gap-card__label">Packing OEE</span><strong class="oee-gap-card__value">${pct(packOee)}</strong><span class="oee-gap-card__detail">${packOeeDetail}</span></div>
+                <div class="oee-gap-card"><span class="oee-gap-card__label">Packing OLE</span><strong class="oee-gap-card__value">${pct(ole)}</strong><span class="oee-gap-card__detail">${packOleDetail}</span></div>
                 <div class="oee-gap-card"><span class="oee-gap-card__label">Meals Packed</span><strong class="oee-gap-card__value">${num(group.totalMeals)}</strong><span class="oee-gap-card__detail">${num(group.sessions.length)} session row(s) | ${num(group.products.length)} meal(s)</span></div>
                 <div class="oee-gap-card"><span class="oee-gap-card__label">Actual Meals/Man/Hr</span><strong class="oee-gap-card__value">${group.actualMealsPerManHr !== null ? num(group.actualMealsPerManHr, 1) : "N/A"}</strong><span class="oee-gap-card__detail">${num(group.totalManHours, 1)} man-hours | ${num(group.totalCartons)} cartons</span></div>
             </div>
             <div class="oee-loss-summary">
                 <span class="oee-loss-pill">${selectedDateLabel === ALL_DATES_VALUE ? "All Dates" : esc(selectedDateLabel)}</span>
-                <span class="oee-loss-pill">Assigned Medium Risk staff ${num(STAFF_ASSUMPTION.mediumRisk)} | attendance assumed 100%</span>
-                <span class="oee-loss-pill">Packing OEE assumption: ${proxyAssumptionLabel()}</span>
+                <span class="oee-loss-pill">${packingMeasured ? `Measured headcount | activation ${pct(packAct)}` : `Assigned Medium Risk staff ${num(STAFF_ASSUMPTION.mediumRisk)} | attendance assumed 100%`}</span>
+                <span class="oee-loss-pill">${packingMeasured ? `Packing OEE: measured availability x 80% performance x 100% quality` : `Packing OEE assumption: ${proxyAssumptionLabel()}`}</span>
                 <span class="oee-loss-pill">Packing OLE uses measured utilization and 75% productivity</span>
                 <span class="oee-loss-pill">Meals: ${esc(group.products.join(" | "))}</span>
                 <span class="oee-loss-pill">${group.headcount ? esc(group.headcount.source_note) : "All-date aggregate uses the fixed staffing assumption."}</span>
@@ -2194,7 +2578,7 @@
                     <div class="oee-table-wrap">
                         <table class="data-table oee-mini-table">
                             <thead><tr><th>OEE</th><th>Activation</th><th>Utilization</th><th>Productivity</th><th>OLE</th><th>Workers</th><th>Meals/Man/Hr</th></tr></thead>
-                            <tbody><tr><td>${pct(proxyOee())}</td><td>${pct(group.activation)}</td><td>${pct(utilization)}</td><td>${pct(PROXY_ASSUMPTION.productivityPct)}</td><td>${pct(ole)}</td><td>${group.headcount ? num(group.headcount.activated) : num(STAFF_ASSUMPTION.mediumRisk)}</td><td>${group.actualMealsPerManHr !== null ? num(group.actualMealsPerManHr, 1) : "N/R"}</td></tr></tbody>
+                            <tbody><tr><td>${pct(packOee)}</td><td>${pct(packingMeasured ? packAct : group.activation)}</td><td>${pct(utilization)}</td><td>${pct(PROXY_ASSUMPTION.productivityPct)}</td><td>${pct(ole)}</td><td>${group.headcount ? num(group.headcount.activated) : num(STAFF_ASSUMPTION.mediumRisk)}</td><td>${group.actualMealsPerManHr !== null ? num(group.actualMealsPerManHr, 1) : "N/R"}</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -2392,12 +2776,18 @@
         if (!select || !detail || !defaultProduct) return;
 
         function renderProduct(product) {
+            const e2eDisp = flowE2EDisplay(flowEndToEnd(product));
             detail.innerHTML = `
                 <div class="oee-trial-comparison-grid" style="margin-bottom:14px">
                     <div class="oee-gap-card">
                         <span class="oee-gap-card__label">Selected Meal</span>
                         <strong class="oee-gap-card__value" style="font-size:1.1rem">${esc(product.label)}</strong>
                         <span class="oee-gap-card__detail">Lot(s): ${esc(product.lots)} | ${esc(product.matchStatus)}</span>
+                    </div>
+                    <div class="oee-gap-card">
+                        <span class="oee-gap-card__label">End-to-End Time</span>
+                        <strong class="oee-gap-card__value">${esc(e2eDisp.value)}</strong>
+                        <span class="oee-gap-card__detail">${esc(e2eDisp.detail)}</span>
                     </div>
                     <div class="oee-gap-card">
                         <span class="oee-gap-card__label">LR Tasks</span>
@@ -2415,6 +2805,7 @@
                         <span class="oee-gap-card__detail">Downstream packing rows</span>
                     </div>
                 </div>
+                <p class="card__helper" style="margin:-4px 0 12px">End-to-End Time = earliest shown prep start to last packing stop (elapsed time, includes idle waiting between stages). Meals packed across multiple days are split per packing day; "pack only" means that day's prep was bulk-done earlier and counted in the first cycle. 24 Mar pre-trial prep excluded.</p>
                 <div class="oee-flow-stack">
                     <div class="oee-flow-product">
                         <div class="oee-flow-product__head">
@@ -2532,12 +2923,28 @@
     async function init() {
         try {
             const [report, trialData] = await Promise.all([
-                fetchJson("/static/data/oee_ole_trial_report.json"),
+                fetchJson("/api/oee-report"),
                 fetchJson("/api/trial-run-data"),
             ]);
 
-            const prepGroups = buildLrStageDateGroups(trialData, "food_prep");
-            const cookingGroups = buildLrStageDateGroups(trialData, "cooking");
+            let prepGroups = buildLrStageDateGroups(trialData, "food_prep");
+            let cookingGroups = buildLrStageDateGroups(trialData, "cooking");
+
+            // When a cooking workbook has been uploaded on the Data page, drive the
+            // Food Prep and Cooking sections from it (restricted to the page's
+            // dates), split by the workbook's Section/Job. Falls back on error.
+            try {
+                const status = await fetchJson("/api/data-status");
+                if (status && status.cooking && status.cooking.source === "uploaded") {
+                    const lrData = await fetchJson("/api/lr-production-data");
+                    const dateLabelByIso = new Map(ALLOWED_TRIAL_DATES.map((d) => [d.iso, d.label]));
+                    const lrCooking = buildLrGroupsFromUpload(lrData, dateLabelByIso, "cooking");
+                    const lrPrep = buildLrGroupsFromUpload(lrData, dateLabelByIso, "food_prep");
+                    if (lrCooking.length) cookingGroups = lrCooking;
+                    if (lrPrep.length) prepGroups = lrPrep;
+                }
+            } catch (e) { /* keep trial_run_data cooking/prep on any failure */ }
+
             const assemblyDateGroups = buildAssemblyDateGroups(report, trialData);
             const packingDateGroups = buildPackingDateGroups(trialData, report);
             const dateOptions = buildGlobalDateOptions(prepGroups, cookingGroups, assemblyDateGroups, packingDateGroups);

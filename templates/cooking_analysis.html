@@ -31,7 +31,7 @@
         <div>
             <p class="eyebrow">Period Total</p>
             <h3>Machine Utilisation Summary</h3>
-            <p class="card__helper">Total minutes each machine was operated across all menu items in the selected scope.</p>
+            <p class="card__helper">Total time each equipment type was operated across all menu items in the selected scope. Click a type to see which menu items and steps used it.</p>
         </div>
     </div>
     <div id="machineSummaryGrid" class="machine-summary-grid"></div>
@@ -44,5 +44,5 @@
     <span>Loading production report...</span>
 </div>
 
-<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=2"></script>
+<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=4"></script>
 {% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Data Upload | Trial Dashboard{% endblock %}
+{% block page_id %}data-upload{% endblock %}
+{% block nav_data %}is-active{% endblock %}
+
+{% macro upload_card(prefix, eyebrow, title, helper) %}
+<article class="card section-gap">
+    <div class="card__header">
+        <div style="min-width:0">
+            <p class="eyebrow">{{ eyebrow }}</p>
+            <h3>{{ title }}</h3>
+            <p class="card__helper">{{ helper|safe }}</p>
+        </div>
+    </div>
+
+    <div class="upload-block">
+        <div class="upload-status" id="{{ prefix }}Status">
+            <span class="upload-status__dot"></span>
+            <span id="{{ prefix }}StatusText">Checking current data source…</span>
+        </div>
+
+        <input type="file" id="{{ prefix }}File" accept=".xlsx,.xlsm" hidden />
+
+        <div class="dropzone" id="{{ prefix }}Dropzone" role="button" tabindex="0" aria-label="Upload Excel file">
+            <svg class="dropzone__icon" width="34" height="34" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p class="dropzone__primary">Drag &amp; drop your <code>.xlsx</code> here, or <span class="dropzone__browse">browse</span></p>
+            <p class="dropzone__hint">Same layout as the source workbook · max 50&nbsp;MB</p>
+        </div>
+
+        <div class="file-preview" id="{{ prefix }}Preview" hidden>
+            <span class="file-preview__icon">XLSX</span>
+            <div class="file-preview__meta">
+                <span class="file-preview__name" id="{{ prefix }}FileName"></span>
+                <span class="file-preview__size" id="{{ prefix }}FileSize"></span>
+            </div>
+            <button type="button" class="file-preview__remove" id="{{ prefix }}FileRemove" aria-label="Remove file">&times;</button>
+        </div>
+
+        <div class="upload-controls">
+            <button type="button" id="{{ prefix }}UploadBtn" class="upload-btn" disabled>Upload &amp; apply</button>
+            <button type="button" id="{{ prefix }}ResetBtn" class="upload-btn upload-btn--ghost" hidden>Reset to default</button>
+        </div>
+
+        <p class="upload-result" id="{{ prefix }}Result" hidden></p>
+    </div>
+</article>
+{% endmacro %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="eyebrow">Data Sources</p>
+        <h2>Upload Production Files</h2>
+        <p class="card__helper">Replace the workbooks that drive the dashboard with updated files. A new file is only applied once it parses cleanly, so a bad upload can never break the dashboard.</p>
+    </div>
+</section>
+
+{{ upload_card("cooking", "LR Cooking & Food Prep",
+    "Cooking Production Workbook",
+    "Drives the Food Prep and Cooking sections (menus, steps, machines, workers, timing). Excel <code>.xlsx</code> with one sheet per production day.") }}
+
+{{ upload_card("assembly", "HR Assembly",
+    "Assembly Workbook",
+    "Drives the Assembly section and its measured OEE / OLE (availability, performance, quality, downtime). Excel <code>.xlsx</code> with one block per day on a single sheet.") }}
+
+{{ upload_card("packing", "MR Packing",
+    "Packing Workbook",
+    "Drives the Packing section's measured Availability &amp; Activation / Utilisation. Excel <code>.xlsx</code> with one sheet per packing day. Quality stays fixed; Performance and Productivity stay proxy (no standard rate).") }}
+
+<script src="{{ url_for('static', filename='js/data_upload_page.js') }}?v=4"></script>
+{% endblock %}

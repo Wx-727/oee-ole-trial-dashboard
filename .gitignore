@@ -1,4 +1,5 @@
 .env
+static/data/uploads/
 __pycache__/
 *.pyc
 *.pyo

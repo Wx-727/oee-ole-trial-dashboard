@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=89">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=91">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body data-page="{% block page_id %}{% endblock %}">
@@ -27,6 +27,7 @@
         {# LR Cooking Analysis hidden from nav (route still available at /cooking-analysis)
         <a href="{{ url_for('cooking_analysis') }}" class="subnav__link {% block nav_cooking %}{% endblock %}">LR Cooking Analysis</a>
         #}
+        <a href="{{ url_for('data_page') }}" class="subnav__link {% block nav_data %}{% endblock %}">Data Upload</a>
     </nav>
 
     <main class="page-shell">

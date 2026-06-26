@@ -98,19 +98,46 @@
             .sort((a, b) => b.totalKg - a.totalKg || a.menu.localeCompare(b.menu));
     }
 
+    // ── Equipment type grouping ─────────────────────────────────────────────────
+    // Individual units (Bratt Pan 1-4, Combi Oven 1-4, …) roll up into one type.
+
+    const MACHINE_TYPE_RULES = [
+        [/^Bratt Pan \d/i, "Bratt Pan"],
+        [/^Combi Oven \d/i, "Combi Oven"],
+        [/^Deep Fryer \d/i, "Deep Fryer"],
+        [/^Steam Box \d/i, "Steam Box"],
+    ];
+
+    function machineType(name) {
+        if (name === "Round Bratt Pan") return "Steam Heated Kettle";
+        for (const [rx, type] of MACHINE_TYPE_RULES) {
+            if (rx.test(name)) return type;
+        }
+        return name;
+    }
+
     // ── Machine summary across all menus in scope ──────────────────────────────
 
     function renderMachineSummary(tasks) {
-        const totals = {};
+        // type -> { total, units:{unit:min}, menus:{menu:{total, steps:{step:min}}} }
+        const types = {};
         tasks.forEach((t) => {
             Object.entries(t.machines || {}).forEach(([name, v]) => {
-                totals[name] = (totals[name] || 0) + Number(v.minutes || 0);
+                const mins = Number(v.minutes || 0);
+                if (mins <= 0) return;
+                const type = machineType(name);
+                const td = types[type] || (types[type] = { total: 0, units: {}, menus: {} });
+                td.total += mins;
+                td.units[name] = (td.units[name] || 0) + mins;
+                const md = td.menus[t.menu] || (td.menus[t.menu] = { total: 0, steps: {} });
+                md.total += mins;
+                md.steps[t.step] = (md.steps[t.step] || 0) + mins;
             });
         });
 
-        const sorted = Object.entries(totals)
-            .filter((e) => e[1] > 0)
-            .sort((a, b) => b[1] - a[1]);
+        const sorted = Object.entries(types)
+            .filter((e) => e[1].total > 0)
+            .sort((a, b) => b[1].total - a[1].total);
 
         if (sorted.length === 0) {
             summaryGrid.innerHTML = "<p class='card__helper'>No machine usage recorded for this period.</p>";
@@ -118,19 +145,85 @@
             return;
         }
 
-        const maxMin = sorted[0][1];
-        summaryGrid.innerHTML = sorted.map((entry) => {
-            const pct = Math.round((entry[1] / maxMin) * 100);
-            return `
-                <div class="machine-summary-row">
-                    <span class="machine-summary-row__name">${esc(entry[0])}</span>
+        const maxMin = sorted[0][1].total;
+        summaryGrid.innerHTML = "";
+        sorted.forEach(([type, td]) => {
+            const pct = Math.round((td.total / maxMin) * 100);
+            const unitCount = Object.keys(td.units).length;
+            const menuCount = Object.keys(td.menus).length;
+
+            const item = document.createElement("div");
+            item.className = "machine-type-item";
+            item.innerHTML = `
+                <div class="machine-summary-row machine-type-row" role="button" tabindex="0">
+                    <span class="machine-summary-row__name">
+                        <span class="machine-type-chevron">&#8964;</span>
+                        ${esc(type)}${unitCount > 1 ? ` <small>(${unitCount} units)</small>` : ""}
+                    </span>
                     <div class="machine-summary-row__bar-wrap">
                         <div class="machine-summary-row__bar" style="width:${pct}%"></div>
                     </div>
-                    <span class="machine-summary-row__value">${fmtMin(entry[1])}</span>
+                    <span class="machine-summary-row__value">${fmtMin(td.total)}</span>
+                </div>
+                <div class="machine-type-detail" hidden>
+                    <p class="machine-type-detail__hint">Used in ${menuCount} menu item${menuCount !== 1 ? "s" : ""}. Click to collapse.</p>
                 </div>`;
-        }).join("");
+
+            const row    = item.querySelector(".machine-type-row");
+            const detail = item.querySelector(".machine-type-detail");
+            const chev   = item.querySelector(".machine-type-chevron");
+            let built = false;
+
+            function toggle() {
+                const open = !detail.hidden;
+                detail.hidden = open;
+                chev.style.transform = open ? "" : "rotate(180deg)";
+                item.classList.toggle("machine-type-item--open", !open);
+                if (!built && !open) {
+                    detail.insertAdjacentHTML("beforeend", renderTypeDetail(td));
+                    built = true;
+                }
+            }
+
+            row.addEventListener("click", toggle);
+            row.addEventListener("keydown", function (e) {
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+            });
+
+            summaryGrid.appendChild(item);
+        });
         summaryCard.style.display = "";
+    }
+
+    // Drill-down: per type, the individual units plus each menu item and the
+    // specific steps that ran on this equipment, sorted by run time.
+    function renderTypeDetail(td) {
+        const unitNames = Object.keys(td.units);
+        const unitHtml = unitNames.length > 1
+            ? `<div class="machine-type-units">${
+                Object.entries(td.units).sort((a, b) => b[1] - a[1]).map(([n, m]) =>
+                    `<span class="machine-pill">${esc(n)} <strong>${fmtMin(m)}</strong></span>`).join(" ")
+              }</div>`
+            : "";
+
+        const menuHtml = Object.entries(td.menus)
+            .sort((a, b) => b[1].total - a[1].total)
+            .map(([menu, md]) => {
+                const stepPills = Object.entries(md.steps)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([s, m]) => `<span class="machine-pill">${esc(s)} <strong>${fmtMin(m)}</strong></span>`)
+                    .join(" ");
+                return `
+                    <div class="machine-type-menu">
+                        <div class="machine-type-menu__head">
+                            <span class="machine-type-menu__name">${esc(menu)}</span>
+                            <span class="machine-type-menu__time">${fmtMin(md.total)}</span>
+                        </div>
+                        <div class="machine-type-menu__steps">${stepPills}</div>
+                    </div>`;
+            }).join("");
+
+        return unitHtml + menuHtml;
     }
 
     // ── Step detail table ──────────────────────────────────────────────────────
@@ -177,6 +270,83 @@
 
     // ── Meal accordion ─────────────────────────────────────────────────────────
 
+    // Trial-run dishes are tagged "Trial Run : …" / "Trial run : …" in the report.
+    function isTrialRun(menu) {
+        return /trial\s*run/i.test(menu);
+    }
+
+    function buildMealCard(meal) {
+        const card = document.createElement("article");
+        card.className = "card section-gap meal-accordion-card";
+        card.innerHTML = `
+            <div class="meal-accordion-header" role="button" tabindex="0">
+                <div class="meal-accordion-header__title">
+                    <h3>${esc(meal.menu)}</h3>
+                </div>
+                <div class="meal-accordion-header__meta">
+                    <span class="meal-meta-pill">${meal.steps.length} step${meal.steps.length !== 1 ? "s" : ""}</span>
+                    <span class="meal-meta-pill">${fmtKg(meal.totalKg)}</span>
+                    <span class="meal-meta-pill">${fmtMin(meal.totalMinutes)}</span>
+                    <span class="meal-accordion-chevron">&#8964;</span>
+                </div>
+            </div>
+            <div class="meal-accordion-body" hidden>
+                ${renderStepTable(meal.steps)}
+            </div>`;
+
+        const header = card.querySelector(".meal-accordion-header");
+        const body   = card.querySelector(".meal-accordion-body");
+        const chev   = card.querySelector(".meal-accordion-chevron");
+
+        function toggle() {
+            const open = !body.hidden;
+            body.hidden = open;
+            chev.style.transform = open ? "" : "rotate(180deg)";
+            card.classList.toggle("meal-accordion-card--open", !open);
+        }
+
+        header.addEventListener("click", toggle);
+        header.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+        });
+
+        return card;
+    }
+
+    function buildMenuGroup(title, items) {
+        const section = document.createElement("section");
+        section.className = "menu-group section-gap";
+        section.innerHTML = `
+            <div class="menu-group__header" role="button" tabindex="0">
+                <h3 class="menu-group__title">${esc(title)}</h3>
+                <div class="menu-group__meta">
+                    <span class="meal-meta-pill">${items.length} item${items.length !== 1 ? "s" : ""}</span>
+                    <span class="menu-group__chevron">&#8964;</span>
+                </div>
+            </div>
+            <div class="menu-group__body"></div>`;
+
+        const header = section.querySelector(".menu-group__header");
+        const gbody  = section.querySelector(".menu-group__body");
+        const gchev  = section.querySelector(".menu-group__chevron");
+
+        items.forEach((meal) => gbody.appendChild(buildMealCard(meal)));
+
+        function toggle() {
+            const open = !gbody.hidden;
+            gbody.hidden = open;
+            gchev.style.transform = open ? "" : "rotate(180deg)";
+            section.classList.toggle("menu-group--open", !open);
+        }
+
+        header.addEventListener("click", toggle);
+        header.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+        });
+
+        return section;
+    }
+
     function renderAccordion(menus) {
         accordion.innerHTML = "";
 
@@ -185,43 +355,15 @@
             return;
         }
 
-        menus.forEach((meal) => {
-            const card = document.createElement("article");
-            card.className = "card section-gap meal-accordion-card";
-            card.innerHTML = `
-                <div class="meal-accordion-header" role="button" tabindex="0">
-                    <div class="meal-accordion-header__title">
-                        <h3>${esc(meal.menu)}</h3>
-                    </div>
-                    <div class="meal-accordion-header__meta">
-                        <span class="meal-meta-pill">${meal.steps.length} step${meal.steps.length !== 1 ? "s" : ""}</span>
-                        <span class="meal-meta-pill">${fmtKg(meal.totalKg)}</span>
-                        <span class="meal-meta-pill">${fmtMin(meal.totalMinutes)}</span>
-                        <span class="meal-accordion-chevron">&#8964;</span>
-                    </div>
-                </div>
-                <div class="meal-accordion-body" hidden>
-                    ${renderStepTable(meal.steps)}
-                </div>`;
+        const trial  = menus.filter((m) => isTrialRun(m.menu));
+        const actual = menus.filter((m) => !isTrialRun(m.menu));
 
-            const header = card.querySelector(".meal-accordion-header");
-            const body   = card.querySelector(".meal-accordion-body");
-            const chev   = card.querySelector(".meal-accordion-chevron");
-
-            function toggle() {
-                const open = !body.hidden;
-                body.hidden = open;
-                chev.style.transform = open ? "" : "rotate(180deg)";
-                card.classList.toggle("meal-accordion-card--open", !open);
-            }
-
-            header.addEventListener("click", toggle);
-            header.addEventListener("keydown", function (e) {
-                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
-            });
-
-            accordion.appendChild(card);
-        });
+        if (trial.length > 0) {
+            accordion.appendChild(buildMenuGroup("Trial Run Items", trial));
+        }
+        if (actual.length > 0) {
+            accordion.appendChild(buildMenuGroup("Menu Items", actual));
+        }
     }
 
     // ── Scope change ───────────────────────────────────────────────────────────
