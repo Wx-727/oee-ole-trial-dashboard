@@ -172,6 +172,27 @@
         return total > 0 ? run / total : null;
     }
 
+    // Assembly labour (HR file): pooled Utilisation = Σ productive man-min /
+    // Σ available man-min, and total man-hours, over the date scope.
+    function assemblyLabourTotals(report, dateLabel) {
+        let rows = ((report.assembly && report.assembly.labour) || [])
+            .filter((r) => isVisibleTrialDateLabel(r.date));
+        if (dateLabel && dateLabel !== ALL_DATES_VALUE) {
+            rows = rows.filter((r) => r.date === dateLabel);
+        }
+        if (!rows.length) return null;
+        let prod = 0, avail = 0, manHours = 0;
+        rows.forEach((r) => {
+            prod += Number(r.productive_min) || 0;
+            avail += Number(r.available_min) || 0;
+            manHours += Number(r.man_hours) || 0;
+        });
+        return {
+            manHours,
+            utilisation: avail > 0 ? prod / avail : null,
+        };
+    }
+
     // Packing Activation pooled: Σ activated headcount / Σ scheduled headcount.
     function pooledPackingActivation(report, dateLabel) {
         let rows = ((report.packing && report.packing.headcount) || [])
@@ -1881,9 +1902,9 @@
         const defaultMeal = meals[0];
 
         target.innerHTML = sectionHeader(
-            "Meal Efficiency",
-            "OEE and OLE by Meal Produced",
-            "This section focuses on one produced meal at a time. OEE and OLE come from the workbook-backed assembly rows, with quality and cross-stage context shown underneath.",
+            "Meal Efficiency (Assembly stage)",
+            "Assembly OEE and OLE by Meal Produced",
+            "Per-meal effectiveness for the ASSEMBLY stage only (Food Prep, Cooking and Packing not included). OEE and OLE come from the workbook-backed assembly rows.",
             "trialMealStageSelect",
             "Meal",
             meals.map((meal) => ({ value: meal.key, label: meal.label })),
@@ -1906,12 +1927,12 @@
             detail.innerHTML = `
                 <div class="oee-trial-comparison-grid" style="margin-bottom:14px">
                     <div class="oee-gap-card">
-                        <span class="oee-gap-card__label">Meal OEE</span>
+                        <span class="oee-gap-card__label">Assembly Meal OEE</span>
                         <strong class="oee-gap-card__value">${pct(meal.oee)}</strong>
                         <span class="oee-gap-card__detail">${esc(meal.date)} | Lot ${esc(meal.lot)}</span>
                     </div>
                     <div class="oee-gap-card">
-                        <span class="oee-gap-card__label">Meal OLE</span>
+                        <span class="oee-gap-card__label">Assembly Meal OLE</span>
                         <strong class="oee-gap-card__value">${pct(meal.ole)}</strong>
                         <span class="oee-gap-card__detail">Derived from availability x performance</span>
                     </div>
@@ -2106,31 +2127,58 @@
             ? totalAvailability * totalPerformance * totalQuality
             : null;
 
+        // Assembly Utilisation uses the measured HR labour log when uploaded,
+        // otherwise falls back to assembly availability as a proxy stand-in.
+        const asmLabour = (report.assembly && report.assembly.labour_source === "uploaded")
+            ? assemblyLabourTotals(report, selectedDateLabel) : null;
+        const asmUtil = (asmLabour && asmLabour.utilisation != null) ? asmLabour.utilisation : aFac.availability;
+
         const totalActivation   = avg([STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct, STAFF_ASSUMPTION.attendancePct, packingActivation]);
-        const totalUtilisation  = avg([PROXY_ASSUMPTION.utilizedLabourPct, PROXY_ASSUMPTION.utilizedLabourPct, aFac.availability, packingUtil]);
+        const totalUtilisation  = avg([PROXY_ASSUMPTION.utilizedLabourPct, PROXY_ASSUMPTION.utilizedLabourPct, asmUtil, packingUtil]);
         const totalProductivity = avg([PROXY_ASSUMPTION.productivityPct, PROXY_ASSUMPTION.productivityPct, aFac.performance, PROXY_ASSUMPTION.productivityPct]);
         const facilityOle = [totalActivation, totalUtilisation, totalProductivity].every((v) => Number.isFinite(Number(v)))
             ? totalActivation * totalUtilisation * totalProductivity
             : null;
 
+        // Measured stage values (match the section cards) so the AI assistant and
+        // the cards agree. Packing is measured only when its MR file is uploaded.
+        const pct1 = (v) => (Number.isFinite(Number(v)) ? Math.round(v * 1000) / 10 : null);
+        const packingOeeCard = Number.isFinite(Number(packingAvail))
+            ? packingAvail * PROXY_ASSUMPTION.performancePct * PROXY_ASSUMPTION.qualityPct
+            : packingOee;
+        const packingOleCard = (packingMeasured && Number.isFinite(Number(packingActivation)) && Number.isFinite(Number(packingUtil)))
+            ? packingActivation * packingUtil * PROXY_ASSUMPTION.productivityPct
+            : packingOle;
+
         window.PAGE_KPI = {
             page: "oee-trial-stages",
-            date_filter: selectedDateLabel === ALL_DATES_VALUE ? "All Dates" : selectedDateLabel,
-            facility_oee_pct: facilityOee !== null ? Math.round(facilityOee * 1000) / 10 : null,
-            facility_ole_pct: facilityOle !== null ? Math.round(facilityOle * 1000) / 10 : null,
+            date_filter: selectedDateLabel === ALL_DATES_VALUE ? "All Dates (25-28 Mar)" : selectedDateLabel,
+            facility_oee_pct: pct1(facilityOee),
+            facility_ole_pct: pct1(facilityOle),
+            facility_factors: {
+                availability_pct: pct1(totalAvailability), performance_pct: pct1(totalPerformance), quality_pct: pct1(totalQuality),
+                activation_pct: pct1(totalActivation), utilisation_pct: pct1(totalUtilisation), productivity_pct: pct1(totalProductivity),
+            },
             stage_oee_pct: {
-                food_prep: Math.round(foodPrepOee * 1000) / 10,
-                cooking: Math.round(cookingOee * 1000) / 10,
-                assembly: assemblyOee !== null ? Math.round(assemblyOee * 1000) / 10 : null,
-                packing: Math.round(packingOee * 1000) / 10,
+                food_prep: pct1(foodPrepOee),
+                cooking: pct1(cookingOee),
+                assembly: pct1(assemblyOee),
+                packing: pct1(packingOeeCard),
             },
             stage_ole_pct: {
-                food_prep: Math.round(proxyOle() * 1000) / 10,
-                cooking: Math.round(proxyOle() * 1000) / 10,
-                assembly: assemblyOle !== null ? Math.round(assemblyOle * 1000) / 10 : null,
-                packing: packingOle !== null ? Math.round(packingOle * 1000) / 10 : null,
+                food_prep: pct1(proxyOle()),
+                cooking: pct1(proxyOle()),
+                assembly: pct1(assemblyOle),
+                packing: pct1(packingOleCard),
             },
-            method: "Total-factor method. Facility OEE = (avg Availability) x (avg Performance) x (avg Quality) across the 4 stages. Facility OLE = (avg Activation) x (avg Utilisation) x (avg Productivity). Assembly factors are pooled from measured rows; the other stages use proxy assumptions.",
+            stage_basis: {
+                food_prep: "proxy", cooking: "proxy",
+                assembly: "measured (Availability/Performance/Quality from uploaded workbook)",
+                packing: packingMeasured
+                    ? "measured Availability/Activation/Utilisation; Performance/Quality/Productivity proxy"
+                    : "proxy",
+            },
+            method: "Total-factor method. Facility OEE = (avg Availability) x (avg Performance) x (avg Quality) across the 4 stages; Facility OLE = (avg Activation) x (avg Utilisation) x (avg Productivity). Each stage contributes its own factor values (measured where available, else proxy); this is NOT a simple average of stage OEEs.",
         };
 
         const quality = report.quality || {};
@@ -2454,11 +2502,20 @@
                 assemblyDate: row.date,
             }))
         );
+        // Real labour from the HR production log (when uploaded).
+        const asmLabour = (report.assembly && report.assembly.labour_source === "uploaded")
+            ? assemblyLabourTotals(report, selectedDateLabel) : null;
+        const mealsPerManHr = (asmLabour && asmLabour.manHours > 0)
+            ? group.totalAssembled / asmLabour.manHours : null;
         detail.innerHTML = `
             <div class="oee-trial-comparison-grid" style="margin-bottom:14px">
                 <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly OEE</span><strong class="oee-gap-card__value">${pct(group.oee)}</strong><span class="oee-gap-card__detail">${selectedDateLabel === ALL_DATES_VALUE ? "All-date weighted OEE" : "Selected day OEE"}</span></div>
-                <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly OLE</span><strong class="oee-gap-card__value">${pct(group.ole)}</strong><span class="oee-gap-card__detail">${selectedDateLabel === ALL_DATES_VALUE ? "All-date weighted OLE" : "Selected day OLE"}</span></div>
+                <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly OLE</span><strong class="oee-gap-card__value">${pct(group.ole)}</strong><span class="oee-gap-card__detail">${asmLabour ? `Utilisation ${pct(asmLabour.utilisation)} measured (HR)` : (selectedDateLabel === ALL_DATES_VALUE ? "All-date weighted OLE" : "Selected day OLE")}</span></div>
                 <div class="oee-gap-card"><span class="oee-gap-card__label">Ordered / Assembled</span><strong class="oee-gap-card__value">${num(group.totalAssembled)}</strong><span class="oee-gap-card__detail">${num(group.totalOrdered)} ordered | ${num(group.rows.length)} meal row(s)</span></div>
+                ${asmLabour ? `
+                <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly Man-Hours</span><strong class="oee-gap-card__value">${num(asmLabour.manHours, 1)}</strong><span class="oee-gap-card__detail">From HR log · Utilisation ${pct(asmLabour.utilisation)}</span></div>
+                <div class="oee-gap-card"><span class="oee-gap-card__label">Meals / Man-Hr</span><strong class="oee-gap-card__value">${mealsPerManHr != null ? num(mealsPerManHr, 1) : "N/A"}</strong><span class="oee-gap-card__detail">${num(group.totalAssembled)} meals ÷ man-hours</span></div>
+                ` : ""}
                 <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly Lines</span><strong class="oee-gap-card__value">${num(lineRows.length)}</strong><span class="oee-gap-card__detail">Estimated line rows from HR batches</span></div>
             </div>
             <div class="oee-loss-summary">
@@ -2619,9 +2676,9 @@
         );
         const defaultMeal = meals[0];
         target.innerHTML = sectionHeader(
-            "Meal Efficiency",
-            "OEE and OLE by Meal Produced",
-            "This section follows the selected global trial date. OEE and OLE come from the workbook-backed assembly rows, with quality and cross-stage context shown underneath.",
+            "Meal Efficiency (Assembly stage)",
+            "Assembly OEE and OLE by Meal Produced",
+            "Per-meal effectiveness for the ASSEMBLY stage only — from the workbook-backed assembly rows. Food Prep, Cooking and Packing are not included (they have no per-meal OEE). Quality and cross-stage traceability are shown underneath.",
             [
                 {
                     id: "trialMealLocalDateSelect",
@@ -2658,8 +2715,8 @@
             const chainQuality = quality && quality.chain_quality !== null && quality.chain_quality !== undefined ? quality.chain_quality : null;
             detail.innerHTML = `
                 <div class="oee-trial-comparison-grid" style="margin-bottom:14px">
-                    <div class="oee-gap-card"><span class="oee-gap-card__label">Meal OEE</span><strong class="oee-gap-card__value">${pct(meal.oee)}</strong><span class="oee-gap-card__detail">${esc(meal.date)} | Lot ${esc(meal.lot)}</span></div>
-                    <div class="oee-gap-card"><span class="oee-gap-card__label">Meal OLE</span><strong class="oee-gap-card__value">${pct(meal.ole)}</strong><span class="oee-gap-card__detail">Derived from availability x performance</span></div>
+                    <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly Meal OEE</span><strong class="oee-gap-card__value">${pct(meal.oee)}</strong><span class="oee-gap-card__detail">${esc(meal.date)} | Lot ${esc(meal.lot)} | assembly stage only</span></div>
+                    <div class="oee-gap-card"><span class="oee-gap-card__label">Assembly Meal OLE</span><strong class="oee-gap-card__value">${pct(meal.ole)}</strong><span class="oee-gap-card__detail">Assembly availability x performance</span></div>
                     <div class="oee-gap-card"><span class="oee-gap-card__label">Ordered / Assembled</span><strong class="oee-gap-card__value">${num(meal.assembled)}</strong><span class="oee-gap-card__detail">${num(meal.ordered)} ordered | ${esc(meal.impact || "No impact note")}</span></div>
                     <div class="oee-gap-card"><span class="oee-gap-card__label">Quality Context</span><strong class="oee-gap-card__value">${chainQuality !== null ? pct(chainQuality) : pct(meal.quality)}</strong><span class="oee-gap-card__detail">${chainQuality !== null ? "Chain quality" : "HR quality only"}</span></div>
                 </div>

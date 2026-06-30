@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Production Planner | Trial Dashboard{% endblock %}
+{% block page_id %}production-planner{% endblock %}
+{% block nav_planner %}is-active{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="eyebrow">Forecasting</p>
+        <h2>Production Planner</h2>
+        <p class="card__helper">Estimate a cook for a target number of meals. Ingredient weights come straight from the recipe (BOM); machine time is estimated from the production report's measured throughput rates. Only menus present in the production report are available.</p>
+    </div>
+</section>
+
+<article class="card section-gap">
+    <div class="card__header">
+        <div style="min-width:0">
+            <p class="eyebrow">Inputs</p>
+            <h3>Choose a menu &amp; target</h3>
+            <p class="card__helper" id="plannerHint">Loading menus…</p>
+        </div>
+    </div>
+    <div class="planner-inputs">
+        <label class="planner-field">
+            <span>Menu item</span>
+            <select id="plannerMenu" class="view-select view-select--light">
+                <option value="">Loading…</option>
+            </select>
+        </label>
+        <label class="planner-field planner-field--meals">
+            <span>Target meals</span>
+            <input type="number" id="plannerMeals" class="planner-meals-input" value="1500" min="1" max="1000000" step="50" />
+        </label>
+        <button type="button" id="plannerRun" class="upload-btn">Estimate</button>
+    </div>
+    <p class="planner-unmatched" id="plannerUnmatched" hidden></p>
+</article>
+
+<div id="plannerResult"></div>
+
+<div id="plannerLoad" class="loading-state" hidden>
+    <div class="loading-spinner"></div>
+    <span>Calculating estimate…</span>
+</div>
+
+<script src="{{ url_for('static', filename='js/production_planner_page.js') }}?v=1"></script>
+{% endblock %}

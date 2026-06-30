@@ -26,6 +26,30 @@
     </div>
 </article>
 
+<section id="cookingKpiStrip" class="kpi-strip section-gap" style="display:none"></section>
+
+<article class="card section-gap" id="dataQualityCard" style="display:none">
+    <div class="card__header dq-header" id="dqHeader" role="button" tabindex="0">
+        <div style="min-width:0">
+            <p class="eyebrow">Data Verification</p>
+            <h3>Data Quality Review</h3>
+            <p class="card__helper">Automatic checks flag pairings that look wrong — for example a machine used for a task it is not meant for. Review each one and mark it a confirmed issue or dismiss it as a false alarm. Decisions are saved.</p>
+        </div>
+        <div class="dq-header__meta">
+            <span class="meal-meta-pill" id="dqHeaderPill"></span>
+            <span class="dq-header__chevron">&#8964;</span>
+        </div>
+    </div>
+    <div class="dq-body" id="dqBody" hidden>
+        <div class="dq-summary" id="dqSummary"></div>
+        <div class="dq-toolbar">
+            <div class="dq-filter" id="dqStatusFilter"></div>
+            <select id="dqCategoryFilter" class="view-select view-select--light" style="width:auto;min-width:170px"></select>
+        </div>
+        <div class="dq-list" id="dqList"></div>
+    </div>
+</article>
+
 <article class="card section-gap" id="machineSummaryCard" style="display:none">
     <div class="card__header">
         <div>
@@ -37,6 +61,29 @@
     <div id="machineSummaryGrid" class="machine-summary-grid"></div>
 </article>
 
+<div class="cooking-sort-bar section-gap" id="cookingSortBar" style="display:none">
+    <div class="cooking-search">
+        <svg class="cooking-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="search" id="cookingSearch" class="cooking-search__input"
+            placeholder="Search menu or step…" autocomplete="off" />
+        <button type="button" id="cookingSearchClear" class="cooking-search__clear" hidden aria-label="Clear search">&times;</button>
+    </div>
+    <div class="cooking-sort-bar__sort">
+        <span class="card__helper" style="margin:0">Sort by</span>
+        <select id="cookingSortSelect" class="view-select view-select--light" style="width:auto;min-width:170px">
+            <option value="kg">Output (kg)</option>
+            <option value="time">Total time</option>
+            <option value="efficiency">Efficiency (kg/man-hr)</option>
+            <option value="name">Name (A–Z)</option>
+        </select>
+    </div>
+</div>
+
+<p class="cooking-search-count card__helper" id="cookingSearchCount" hidden></p>
+
 <div id="mealAccordion"></div>
 
 <div id="cookingLoadState" class="loading-state">
@@ -44,5 +91,5 @@
     <span>Loading production report...</span>
 </div>
 
-<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=4"></script>
+<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=12"></script>
 {% endblock %}
