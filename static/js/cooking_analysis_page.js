@@ -82,31 +82,25 @@
         return manMinutes > 0 ? kg / (manMinutes / 60) : null;
     }
 
-    function buildMenus(tasks) {
-        const menus = {};
+    // Collapse a set of task rows into the per-step table structure (used for the
+    // whole menu and, on demand, for a single selected date within a menu).
+    function computeSteps(tasks) {
+        const stepMap = {};
+        const stepOrder = [];
         tasks.forEach((t) => {
-            const menuKey = t.menu;
-            if (!menus[menuKey]) {
-                menus[menuKey] = { menu: menuKey, stepMap: {}, stepOrder: [], totalKg: 0, totalMinutes: 0, manMinutes: 0, peakWorkers: 0, dateSet: {} };
-            }
-            const meal = menus[menuKey];
-            if (t.date) meal.dateSet[t.date] = true;
             const workers = Number(t.workers) || 0;
             const dur = Number(t.duration_min) || 0;
-
             const stepKey = String(t.step || "").toLowerCase();
-            if (!meal.stepMap[stepKey]) {
-                meal.stepMap[stepKey] = { name: t.step, stageMin: {}, batches: 0, totalMinutes: 0, totalKg: 0, manMinutes: 0, workers: 0, machines: {} };
-                meal.stepOrder.push(stepKey);
+            if (!stepMap[stepKey]) {
+                stepMap[stepKey] = { name: t.step, stageMin: {}, batches: 0, totalMinutes: 0, totalKg: 0, manMinutes: 0, workers: 0, machines: {} };
+                stepOrder.push(stepKey);
             }
-            const step = meal.stepMap[stepKey];
+            const step = stepMap[stepKey];
             step.batches      += t.batches || 0;
             step.totalMinutes += dur;
             step.totalKg      += t.kg || 0;
             step.manMinutes   += workers * dur;
             step.workers       = Math.max(step.workers, workers);
-            // Track time per stage so the badge reflects the dominant one (some
-            // steps are logged under both Prep and Cooking sections across days).
             const st = t.stage || "cooking";
             step.stageMin[st] = (step.stageMin[st] || 0) + (dur || 1);
             Object.entries(t.machines || {}).forEach(([name, v]) => {
@@ -114,45 +108,60 @@
                 step.machines[name].minutes += Number(v.minutes || 0);
                 step.machines[name].batches += Number(v.batches || 0);
             });
-
-            meal.totalKg      += t.kg || 0;
-            meal.totalMinutes += dur;
-            meal.manMinutes   += workers * dur;
-            meal.peakWorkers   = Math.max(meal.peakWorkers, workers);
         });
+        return stepOrder.map((sk) => {
+            const s = stepMap[sk];
+            const dominantStage = Object.entries(s.stageMin).sort((a, b) => b[1] - a[1])[0];
+            return {
+                name: s.name,
+                stage: dominantStage ? dominantStage[0] : "cooking",
+                batches: s.batches,
+                totalMinutes: s.totalMinutes,
+                totalKg: s.totalKg,
+                minPerBatch: s.batches ? s.totalMinutes / s.batches : s.totalMinutes,
+                kgPerBatch: s.batches ? s.totalKg / s.batches : s.totalKg,
+                workers: s.workers,
+                kgPerManHr: kgPerManHr(s.totalKg, s.manMinutes),
+                machines: Object.entries(s.machines)
+                    .map(([name, v]) => ({ name, minutes: v.minutes, perBatch: v.batches ? v.minutes / v.batches : v.minutes }))
+                    .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name)),
+            };
+        });
+    }
 
-        return Object.values(menus)
-            .map((meal) => ({
-                menu: meal.menu,
-                totalKg: meal.totalKg,
-                totalMinutes: meal.totalMinutes,
-                peakWorkers: meal.peakWorkers,
-                dates: Object.keys(meal.dateSet).sort(),
-                kgPerManHr: kgPerManHr(meal.totalKg, meal.manMinutes),
-                steps: meal.stepOrder.map((sk) => {
-                    const s = meal.stepMap[sk];
-                    const dominantStage = Object.entries(s.stageMin)
-                        .sort((a, b) => b[1] - a[1])[0];
-                    return {
-                        name: s.name,
-                        stage: dominantStage ? dominantStage[0] : "cooking",
-                        batches: s.batches,
-                        totalMinutes: s.totalMinutes,
-                        totalKg: s.totalKg,
-                        minPerBatch: s.batches ? s.totalMinutes / s.batches : s.totalMinutes,
-                        kgPerBatch: s.batches ? s.totalKg / s.batches : s.totalKg,
-                        workers: s.workers,
-                        kgPerManHr: kgPerManHr(s.totalKg, s.manMinutes),
-                        machines: Object.entries(s.machines)
-                            .map(([name, v]) => ({
-                                name,
-                                minutes: v.minutes,
-                                perBatch: v.batches ? v.minutes / v.batches : v.minutes,
-                            }))
-                            .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name)),
-                    };
-                }),
-            }));
+    // Totals + steps for a menu limited to one date (iso ""/null = all dates).
+    function mealForDate(meal, iso) {
+        const tasks = iso ? meal.tasks.filter((t) => t.date === iso) : meal.tasks;
+        let totalKg = 0, totalMinutes = 0, manMinutes = 0;
+        tasks.forEach((t) => {
+            const w = Number(t.workers) || 0, d = Number(t.duration_min) || 0;
+            totalKg += t.kg || 0; totalMinutes += d; manMinutes += w * d;
+        });
+        return { steps: computeSteps(tasks), totalKg, totalMinutes, kgPerManHr: kgPerManHr(totalKg, manMinutes) };
+    }
+
+    function buildMenus(tasks) {
+        const byMenu = {};
+        tasks.forEach((t) => { (byMenu[t.menu] = byMenu[t.menu] || []).push(t); });
+        return Object.entries(byMenu).map(([menu, menuTasks]) => {
+            const view = mealForDate({ tasks: menuTasks }, "");
+            const dateSet = {};
+            let peakWorkers = 0;
+            menuTasks.forEach((t) => {
+                if (t.date) dateSet[t.date] = true;
+                peakWorkers = Math.max(peakWorkers, Number(t.workers) || 0);
+            });
+            return {
+                menu,
+                tasks: menuTasks,
+                totalKg: view.totalKg,
+                totalMinutes: view.totalMinutes,
+                peakWorkers,
+                dates: Object.keys(dateSet).sort(),
+                kgPerManHr: view.kgPerManHr,
+                steps: view.steps,
+            };
+        });
     }
 
     function fmtEff(v) {
@@ -542,17 +551,11 @@
 
     function dayPills(isos) {
         if (!isos || !isos.length) return "";
+        const all = `<span class="meal-day-pill meal-day-pill--active" data-iso="" role="button" tabindex="0" title="Show all dates">All</span>`;
         const pills = isos
-            .map((iso) => `<span class="meal-day-pill" data-iso="${esc(iso)}" role="button" tabindex="0" title="View ${esc(dateLabels[iso] || iso)}">${esc(dateLabels[iso] || iso)}</span>`)
+            .map((iso) => `<span class="meal-day-pill" data-iso="${esc(iso)}" role="button" tabindex="0" title="Show ${esc(dateLabels[iso] || iso)} steps">${esc(dateLabels[iso] || iso)}</span>`)
             .join("");
-        return `<div class="meal-days"><span class="meal-days__label">Produced on</span>${pills}</div>`;
-    }
-
-    function goToDate(iso) {
-        if (!dateSelector) return;
-        dateSelector.value = iso;
-        applyScope(iso);
-        if (kpiStrip) kpiStrip.scrollIntoView({ behavior: "smooth", block: "start" });
+        return `<div class="meal-days"><span class="meal-days__label">Produced on</span>${all}${pills}</div>`;
     }
 
     const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -588,6 +591,7 @@
     function buildMealCard(meal) {
         const card = document.createElement("article");
         card.className = "card section-gap meal-accordion-card";
+        const stepsPill = `${meal.steps.length} step${meal.steps.length !== 1 ? "s" : ""}`;
         card.innerHTML = `
             <div class="meal-accordion-header" role="button" tabindex="0">
                 <div class="meal-accordion-header__title">
@@ -596,10 +600,10 @@
                     ${assembledRow(meal.menu)}
                 </div>
                 <div class="meal-accordion-header__meta">
-                    <span class="meal-meta-pill">${meal.steps.length} step${meal.steps.length !== 1 ? "s" : ""}</span>
-                    <span class="meal-meta-pill">${fmtKg(meal.totalKg)}</span>
-                    <span class="meal-meta-pill">${fmtMin(meal.totalMinutes)}</span>
-                    ${meal.kgPerManHr ? `<span class="meal-meta-pill meal-meta-pill--accent">${fmtEff(meal.kgPerManHr)} kg/man-hr</span>` : ""}
+                    <span class="meal-meta-pill" data-meta="steps">${stepsPill}</span>
+                    <span class="meal-meta-pill" data-meta="kg">${fmtKg(meal.totalKg)}</span>
+                    <span class="meal-meta-pill" data-meta="time">${fmtMin(meal.totalMinutes)}</span>
+                    ${meal.kgPerManHr ? `<span class="meal-meta-pill meal-meta-pill--accent" data-meta="eff">${fmtEff(meal.kgPerManHr)} kg/man-hr</span>` : `<span data-meta="eff" hidden></span>`}
                     ${mealsPills(meal.menu)}
                     <span class="meal-accordion-chevron">&#8964;</span>
                 </div>
@@ -612,24 +616,38 @@
         const body   = card.querySelector(".meal-accordion-body");
         const chev   = card.querySelector(".meal-accordion-chevron");
 
-        function toggle() {
-            const open = !body.hidden;
-            body.hidden = open;
-            chev.style.transform = open ? "" : "rotate(180deg)";
-            card.classList.toggle("meal-accordion-card--open", !open);
+        function setOpen(open) {
+            body.hidden = !open;
+            chev.style.transform = open ? "rotate(180deg)" : "";
+            card.classList.toggle("meal-accordion-card--open", open);
         }
+        function toggle() { setOpen(body.hidden); }
 
         header.addEventListener("click", toggle);
         header.addEventListener("keydown", function (e) {
             if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
         });
 
-        // Day pills jump to that date's scope instead of toggling the card.
+        // Day pills filter the steps within this card to the chosen date (other
+        // dates stay visible so you can switch quickly). "All" shows every date.
+        function selectDate(iso, pill) {
+            const view = mealForDate(meal, iso);
+            body.innerHTML = renderStepTable(view.steps, meal.menu);
+            card.querySelectorAll("[data-meta='steps']")[0].textContent =
+                `${view.steps.length} step${view.steps.length !== 1 ? "s" : ""}`;
+            card.querySelector("[data-meta='kg']").textContent = fmtKg(view.totalKg);
+            card.querySelector("[data-meta='time']").textContent = fmtMin(view.totalMinutes);
+            const eff = card.querySelector("[data-meta='eff']");
+            if (view.kgPerManHr) { eff.hidden = false; eff.className = "meal-meta-pill meal-meta-pill--accent"; eff.textContent = `${fmtEff(view.kgPerManHr)} kg/man-hr`; }
+            else { eff.hidden = true; }
+            card.querySelectorAll(".meal-day-pill").forEach((p) => p.classList.toggle("meal-day-pill--active", p === pill));
+            setOpen(true);
+        }
         card.querySelectorAll(".meal-day-pill").forEach(function (pill) {
             const iso = pill.dataset.iso;
-            pill.addEventListener("click", function (e) { e.stopPropagation(); goToDate(iso); });
+            pill.addEventListener("click", function (e) { e.stopPropagation(); selectDate(iso, pill); });
             pill.addEventListener("keydown", function (e) {
-                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); goToDate(iso); }
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); selectDate(iso, pill); }
             });
         });
 

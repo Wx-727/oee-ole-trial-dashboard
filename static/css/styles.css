@@ -9876,7 +9876,7 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
 
 .meal-accordion-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     padding: 16px 24px;
     cursor: pointer;
@@ -9888,10 +9888,17 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
     background: var(--surface-alt, #f9fafb);
 }
 
+.meal-accordion-header__title {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
 .meal-accordion-header__title h3 {
     font-size: 0.95rem;
     font-weight: 600;
-    margin: 2px 0 0;
+    margin: 0;
     color: var(--text-primary, #111827);
 }
 .meal-days {
@@ -9899,7 +9906,7 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
     flex-wrap: wrap;
     align-items: center;
     gap: 5px;
-    margin-top: 6px;
+    margin-top: 0;
 }
 .meal-days__label {
     font-size: 0.72rem;
@@ -9920,9 +9927,15 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
 }
 .meal-day-pill:hover,
 .meal-day-pill:focus {
-    background: #1d4ed8;
-    color: #fff;
+    background: #dbe4ff;
+    border-color: #b9c6f7;
     outline: none;
+}
+.meal-day-pill--active,
+.meal-day-pill--active:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
 }
 
 /* Meals assembled (from the HR month report) */
@@ -9931,7 +9944,7 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
     flex-wrap: wrap;
     align-items: center;
     gap: 5px;
-    margin-top: 5px;
+    margin-top: 0;
 }
 .meal-assembled-pill {
     font-size: 0.72rem;
@@ -10044,8 +10057,11 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
 .meal-accordion-header__meta {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 8px;
     flex-shrink: 0;
+    max-width: 55%;
 }
 
 .meal-meta-pill {
