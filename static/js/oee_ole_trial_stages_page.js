@@ -1980,28 +1980,6 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="oee-trial-comparison-grid" style="margin-top:16px">
-                    <div class="oee-gap-card">
-                        <span class="oee-gap-card__label">Matched LR Tasks</span>
-                        <strong class="oee-gap-card__value">${num(lrCount)}</strong>
-                        <span class="oee-gap-card__detail">${flow ? "Workbook flow context matched" : "No flow match found"}</span>
-                    </div>
-                    <div class="oee-gap-card">
-                        <span class="oee-gap-card__label">Matched MR Sessions</span>
-                        <strong class="oee-gap-card__value">${num(mrCount)}</strong>
-                        <span class="oee-gap-card__detail">${flow ? `Lot scope ${esc(flow.lots)}` : "No downstream session match found"}</span>
-                    </div>
-                    <div class="oee-gap-card">
-                        <span class="oee-gap-card__label">Chain Quality</span>
-                        <strong class="oee-gap-card__value">${chainQuality !== null ? pct(chainQuality) : "N/A"}</strong>
-                        <span class="oee-gap-card__detail">${chainQuality !== null ? "LR quality event affected full chain" : "No LR quality limit recorded"}</span>
-                    </div>
-                    <div class="oee-gap-card">
-                        <span class="oee-gap-card__label">Flow Match</span>
-                        <strong class="oee-gap-card__value">${flow ? "Matched" : "Partial"}</strong>
-                        <span class="oee-gap-card__detail">${flow ? shortProduct(flow.product) : "Meal naming or lot join incomplete"}</span>
-                    </div>
-                </div>
             `;
         }
 
@@ -2731,12 +2709,6 @@
                         <thead><tr><th>Date</th><th>Lot</th><th>Availability</th><th>Performance</th><th>Quality</th><th>Plan Window</th><th>Assembly Time</th><th>Total Window</th></tr></thead>
                         <tbody><tr><td>${esc(meal.date)}</td><td>${esc(meal.lot)}</td><td>${pct(meal.availability)}</td><td>${pct(meal.performance)}</td><td>${pct(meal.quality)}</td><td>${formatMinutes(meal.plan_window_min)}</td><td>${meal.assembly_time_min !== null ? formatMinutes(meal.assembly_time_min) : "N/R"}</td><td>${meal.total_window_min !== null ? formatMinutes(meal.total_window_min) : "N/R"}</td></tr></tbody>
                     </table>
-                </div>
-                <div class="oee-trial-comparison-grid" style="margin-top:16px">
-                    <div class="oee-gap-card"><span class="oee-gap-card__label">Matched LR Tasks</span><strong class="oee-gap-card__value">${num(lrCount)}</strong><span class="oee-gap-card__detail">${flow ? "Workbook flow context matched" : "No flow match found"}</span></div>
-                    <div class="oee-gap-card"><span class="oee-gap-card__label">Matched MR Sessions</span><strong class="oee-gap-card__value">${num(mrCount)}</strong><span class="oee-gap-card__detail">${flow ? `Lot scope ${esc(flow.lots)}` : "No downstream session match found"}</span></div>
-                    <div class="oee-gap-card"><span class="oee-gap-card__label">Chain Quality</span><strong class="oee-gap-card__value">${chainQuality !== null ? pct(chainQuality) : "N/A"}</strong><span class="oee-gap-card__detail">${chainQuality !== null ? "LR quality event affected full chain" : "No LR quality limit recorded"}</span></div>
-                    <div class="oee-gap-card"><span class="oee-gap-card__label">Flow Match</span><strong class="oee-gap-card__value">${flow ? "Matched" : "Partial"}</strong><span class="oee-gap-card__detail">${flow ? shortProduct(flow.product) : "Meal naming or lot join incomplete"}</span></div>
                 </div>
             `;
         }

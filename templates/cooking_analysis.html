@@ -61,6 +61,21 @@
     <div id="machineSummaryGrid" class="machine-summary-grid"></div>
 </article>
 
+<article class="card section-gap" id="unitUsageCard" style="display:none">
+    <div class="card__header unit-usage-header" id="unitUsageHeader" role="button" tabindex="0">
+        <div style="min-width:0">
+            <p class="eyebrow">Per Unit</p>
+            <h3>Unit-Level Equipment Usage</h3>
+            <p class="card__helper" id="unitUsageHint">Hours each individual machine unit ran.</p>
+        </div>
+        <span class="unit-usage-chevron">&#8964;</span>
+    </div>
+    <div class="unit-usage-body" id="unitUsageBody" hidden>
+        <div id="unitUsageMatrix"></div>
+        <div id="unitUsageDrill" class="unit-drill" hidden></div>
+    </div>
+</article>
+
 <div class="cooking-sort-bar section-gap" id="cookingSortBar" style="display:none">
     <div class="cooking-search">
         <svg class="cooking-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -91,5 +106,5 @@
     <span>Loading production report...</span>
 </div>
 
-<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=12"></script>
+<script src="{{ url_for('static', filename='js/cooking_analysis_page.js') }}?v=16"></script>
 {% endblock %}

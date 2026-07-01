@@ -51,6 +51,8 @@ def _active_lr_path() -> Path:
 
 # ── LR Excel parser ────────────────────────────────────────────────────────────
 
+_LR_PARSE_CACHE = {}   # path -> (mtime, parsed dict); see _parse_lr_production
+
 MACHINE_COLS = [
     (12, "Bowl Cutter"),
     (13, "Blender (Batching)"),
@@ -70,15 +72,14 @@ MACHINE_COLS = [
     (27, "Bratt Pan 1"),
     (28, "Bratt Pan 2"),
     (29, "Bratt Pan 3"),
-    (30, "Bratt Pan 4"),
-    (31, "Round Bratt Pan"),
-    (32, "Pan Fry"),
-    (33, "Deep Fryer 1"),
-    (34, "Deep Fryer 2"),
-    (35, "Deep Fryer 3"),
-    (36, "Deep Fryer 4"),
-    (37, "Hot Plate"),
-    (38, "Flame Grill"),
+    (30, "Round Bratt Pan"),
+    (31, "Pan Fry"),
+    (32, "Deep Fryer 1"),
+    (33, "Deep Fryer 2"),
+    (34, "Deep Fryer 3"),
+    (35, "Deep Fryer 4"),
+    (36, "Hot Plate"),
+    (37, "Flame Grill"),
 ]
 
 _SKIP_KEYWORDS = ("cleaning line", "break", "เตรียม")
@@ -283,8 +284,21 @@ def _parse_lr_production(path: str) -> dict:
 
     Batches of the same step are merged; each machine carries total run minutes
     and the number of batches it ran (so the client can show a per-batch time).
+
+    Cached by file mtime — parsing the 55-sheet workbook is ~3s, and many routes
+    (cooking page, data quality, meals, planner) need it, so re-parsing each
+    request made the planner take seconds. Callers must treat the result as
+    read-only (the cached object is shared).
     """
     import openpyxl
+
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        mtime = None
+    cached = _LR_PARSE_CACHE.get(path)
+    if cached and cached[0] == mtime:
+        return cached[1]
 
     wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
     data_sheets = [sn for sn in wb.sheetnames if _sheet_date_iso(sn)]
@@ -392,11 +406,13 @@ def _parse_lr_production(path: str) -> dict:
             mm["minutes"] = round(mm["minutes"], 1)
         tasks.append(entry)
 
-    return {
+    result = {
         "dates": sorted(date_labels.keys()),
         "date_labels": date_labels,
         "tasks": tasks,
     }
+    _LR_PARSE_CACHE[path] = (mtime, result)
+    return result
 
 
 # ── LR data-quality verification ──────────────────────────────────────────────
@@ -467,6 +483,12 @@ _HEAT_OPS = {"boil", "steam", "rice", "fry_deep", "fry_pan", "grill", "bake", "r
 # on specialised machines (everything not listed here); the egg-filling-on-pasta
 # style misuse lives entirely among the specialised set.
 MULTIPURPOSE_MACHINES = {"Combi Oven", "Bratt Pan", "Steam Box", "Steam Heated Kettle"}
+
+# Prep/processing machines (no heat) — used to tag planner rows prep vs cook.
+_PREP_MACHINE_TYPES = {
+    "Bowl Cutter", "Blender (Batching)", "Vegetable Cutting", "Peeling Machine",
+    "Can Opener", "Robocoupe Dice", "Knife", "Meat Ball Machine", "Egg Filling",
+}
 
 _MACHINE_TYPE_RULES = [
     (re.compile(r"^Bratt Pan \d", re.I), "Bratt Pan"),
@@ -966,102 +988,112 @@ def _primary_op(ops: set):
 
 
 def _estimate_plan(lr_menu: str, meals: int) -> dict:
+    """Forecast a run of `meals` for an LR cooking menu.
+
+    Machine time, the per-step machine breakdown and labour all come from the LR
+    cooking file's ACTUAL records (every machine that touched the dish, prep
+    included), scaled by the meals/meal ratio using the HR report's actual meals
+    assembled as the denominator. Ingredient weights come from the BOM recipe.
+    """
     bom = _load_bom()
     match = _resolve_menu_match(lr_menu, bom["index"], _load_bom_overrides())
-    if not match["code"]:
-        return {"matched": False, "menu": lr_menu, "match": match}
 
-    recipe = bom["by_code"][match["code"]]
-    scale = meals / float(BOM_BASIS_MEALS)
+    # ── Ingredients (from BOM, exact) — optional ──────────────────────────────
+    ing_rows, cat_totals, food_kg = [], {}, 0.0
+    bom_matched = bool(match["code"])
+    if bom_matched:
+        recipe = bom["by_code"][match["code"]]
+        scale_b = meals / float(BOM_BASIS_MEALS)
+        for name, info in recipe["ingredients"].items():
+            kg = info["kg"] * scale_b
+            if kg <= 0:
+                continue
+            ing_rows.append({"name": name, "category": info["category"], "kg": round(kg, 2)})
+            cat_totals[info["category"]] = cat_totals.get(info["category"], 0) + kg
+        ing_rows.sort(key=lambda r: -r["kg"])
+        food_kg = sum(cat_totals.values())
 
-    # Ingredients (exact, from BOM) — grouped by food category.
-    ing_rows = []
-    cat_totals = {}
-    for name, info in recipe["ingredients"].items():
-        kg = info["kg"] * scale
-        if kg <= 0:
-            continue
-        ing_rows.append({"name": name, "category": info["category"], "kg": round(kg, 2)})
-        cat_totals[info["category"]] = cat_totals.get(info["category"], 0) + kg
-    ing_rows.sort(key=lambda r: -r["kg"])
-    food_kg = sum(cat_totals.values())
-
-    # Machine time (estimated) — operation rates applied to BOM process kg.
-    rates = _lr_rate_engine(_parse_lr_production(str(_active_lr_path())).get("tasks", []))
+    # ── Machine time & per-step usage (from the LR cooking file, scaled) ───────
+    lr_tasks = [t for t in _parse_lr_production(str(_active_lr_path())).get("tasks", [])
+                if t.get("menu") == lr_menu]
+    meals_info = (_lr_menu_meals().get("menus") or {}).get(lr_menu)
+    actual_meals = meals_info["meals"] if meals_info else None
     units = _machine_units_per_type()
-    by_type = {}     # machine type -> {minutes, target_kg, measured}
-    proc_rows = []
-    measured_kg = unmeasured_kg = unmapped_kg = 0.0
-    for proc in recipe["processes"]:
-        kg = proc["kg_basis"] * scale
-        if kg <= 0:
-            continue
-        ops = _infer_step_ops(proc["name"])
-        op = _primary_op(ops)
-        mtype = rates["op_machine"].get(op) or _OP_MACHINE.get(op)
-        if not mtype:
-            unmapped_kg += kg
-            proc_rows.append({"name": proc["name"], "kg": round(kg, 1),
-                              "machine": None, "minutes": None, "measured": False})
-            continue
-        rate = rates["rate_per_type"].get(mtype)
-        measured = rate is not None
-        if not measured:
-            rate = rates["global_rate"]
-        minutes = kg * rate
-        if measured:
-            measured_kg += kg
-        else:
-            unmeasured_kg += kg
-        bt = by_type.setdefault(mtype, {"minutes": 0.0, "target_kg": 0.0, "measured": True})
-        bt["minutes"] += minutes
-        bt["target_kg"] += kg
-        if not measured:
-            bt["measured"] = False
-        proc_rows.append({"name": proc["name"], "kg": round(kg, 1), "operation": op,
-                          "machine": mtype, "minutes": round(minutes, 1), "measured": measured})
 
-    # Per-machine-type aggregation + batches + wall-clock.
-    machine_rows = []
-    total_machine_min = 0.0
-    per_type_busy = []
+    by_type = {}        # machine type -> {minutes, batches}
+    step_usage = {}     # step -> {minutes, stage, machines:{name:minutes}}
+    total_man_min = 0.0
+    for t in lr_tasks:
+        dur = float(t.get("duration_min") or 0)
+        total_man_min += float(t.get("workers") or 0) * dur
+        step = step_usage.setdefault(t.get("step", ""), {"minutes": 0.0, "stage": t.get("stage"), "machines": {}})
+        for name, v in (t.get("machines") or {}).items():
+            mins = float((v or {}).get("minutes") or 0)
+            if mins <= 0:
+                continue
+            mt = _machine_type(name)
+            bt = by_type.setdefault(mt, {"minutes": 0.0, "batches": 0.0})
+            bt["minutes"] += mins
+            bt["batches"] += float((v or {}).get("batches") or 0)
+            step["minutes"] += mins
+            step["machines"][name] = step["machines"].get(name, 0) + mins
+
+    machine_available = bool(lr_tasks) and bool(actual_meals)
+    f = (meals / actual_meals) if machine_available else 0.0
+    # Baseline crew = the largest worker count seen on any single step (a simple
+    # starting point for the staff slider; the user adjusts from there).
+    peak_workers = int(max((float(t.get("workers") or 0) for t in lr_tasks), default=0))
+
+    machine_rows, per_type_busy, total_machine_min = [], [], 0.0
     for mt, info in sorted(by_type.items(), key=lambda kv: -kv[1]["minutes"]):
+        mins = info["minutes"] * f
         u = units.get(mt, 1)
-        kgpb = rates["kg_per_batch"].get(mt)
-        batches = math.ceil(info["target_kg"] / kgpb) if kgpb and kgpb > 0 else None
-        busy = info["minutes"] / u
+        busy = mins / u
         per_type_busy.append(busy)
-        total_machine_min += info["minutes"]
+        total_machine_min += mins
         machine_rows.append({
             "machine_type": mt, "units": u,
-            "minutes": round(info["minutes"], 1),
-            "hours": round(info["minutes"] / 60, 2),
+            "minutes": round(mins, 1), "hours": round(mins / 60, 2),
             "busy_minutes": round(busy, 1),
-            "batches": batches, "measured": info["measured"],
+            "batches": int(round(info["batches"] * f)) if f else None,
+            "stage": "prep" if mt in _PREP_MACHINE_TYPES else "cook",
         })
 
-    proc_kg = measured_kg + unmeasured_kg + unmapped_kg
-    coverage = (measured_kg / proc_kg) if proc_kg > 0 else 0
-    labour_hours = (rates["man_per_kg"] * food_kg) / 60
-    best_case = max(per_type_busy) if per_type_busy else 0      # full parallel
-    worst_case = sum(per_type_busy) if per_type_busy else 0     # types sequential
-    bottleneck = max(machine_rows, key=lambda r: r["busy_minutes"])["machine_type"] if machine_rows else None
+    # Per-step machine breakdown (which step ran which machines, for how long).
+    step_rows = []
+    for name, s in sorted(step_usage.items(), key=lambda kv: -kv[1]["minutes"]):
+        if s["minutes"] <= 0:
+            continue
+        machines = sorted(
+            ({"machine": n, "minutes": round(m * f, 1)} for n, m in s["machines"].items()),
+            key=lambda x: -x["minutes"])
+        step_rows.append({"step": name, "stage": s["stage"],
+                          "minutes": round(s["minutes"] * f, 1), "machines": machines})
+
+    labour_hours = (total_man_min * f) / 60 if machine_available else None
+    best_case = max(per_type_busy) if per_type_busy else 0
+    worst_case = sum(per_type_busy) if per_type_busy else 0
+    bottleneck = machine_rows[0]["machine_type"] if machine_rows else None
 
     return {
-        "matched": True, "menu": lr_menu, "meals": meals, "match": match,
+        "matched": bom_matched or machine_available,
+        "menu": lr_menu, "meals": meals, "match": match,
+        "bom_matched": bom_matched,
+        "machine_available": machine_available,
+        "actual_meals": actual_meals,
+        "peak_workers": peak_workers,
         "ingredients": ing_rows,
         "category_totals": [{"category": c, "kg": round(v, 1)} for c, v in
                             sorted(cat_totals.items(), key=lambda kv: -kv[1])],
         "food_kg": round(food_kg, 1),
-        "processes": proc_rows,
         "machines": machine_rows,
+        "steps": step_rows,
         "summary": {
-            "total_machine_hours": round(total_machine_min / 60, 1),
-            "labour_hours": round(labour_hours, 1),
-            "wall_clock_best_hours": round(best_case / 60, 1),
-            "wall_clock_worst_hours": round(worst_case / 60, 1),
+            "total_machine_hours": round(total_machine_min / 60, 1) if machine_available else None,
+            "labour_hours": round(labour_hours, 1) if labour_hours is not None else None,
+            "wall_clock_best_hours": round(best_case / 60, 1) if machine_available else None,
+            "wall_clock_worst_hours": round(worst_case / 60, 1) if machine_available else None,
             "bottleneck": bottleneck,
-            "coverage": round(coverage, 2),
         },
     }
 

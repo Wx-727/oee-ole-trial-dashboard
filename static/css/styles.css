@@ -9680,6 +9680,7 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
     color: var(--text-secondary, #6b7280);
     font-size: 0.9rem;
 }
+.loading-state[hidden] { display: none; }
 
 .machine-summary-grid {
     display: flex;
@@ -9948,6 +9949,98 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
     font-weight: 600;
 }
 
+/* ── Unit-level equipment usage ──────────────────────────────────────────── */
+.unit-usage-header { cursor: pointer; align-items: flex-start; gap: 12px; }
+.unit-usage-chevron {
+    margin-left: auto;
+    color: var(--text-soft);
+    transition: transform 0.18s ease;
+    flex: none;
+}
+.unit-usage-card--open .unit-usage-chevron { transform: rotate(180deg); }
+.unit-usage-body { margin-top: 12px; }
+
+.unit-matrix-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+.unit-matrix {
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    width: max-content;
+    min-width: 100%;
+}
+.unit-matrix th, .unit-matrix td {
+    border: 1px solid var(--border);
+    text-align: center;
+    padding: 4px 6px;
+    white-space: nowrap;
+}
+.unit-matrix__corner, .unit-matrix__unit {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    text-align: left;
+    font-weight: 600;
+    min-width: 130px;
+    z-index: 1;
+}
+.unit-matrix thead th {
+    background: var(--surface-alt);
+    font-weight: 600;
+    color: var(--text-soft);
+}
+.unit-matrix__day { min-width: 26px; }
+.unit-matrix__total { font-weight: 700; background: var(--surface-alt); }
+.unit-matrix__grouprow td {
+    background: var(--surface-alt);
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--primary);
+    position: sticky;
+    left: 0;
+}
+.unit-matrix__cell { color: var(--text); min-width: 34px; }
+.unit-matrix__cell.is-on { cursor: pointer; font-weight: 600; }
+.unit-matrix__cell.is-on.is-dark { color: #fff; }
+.unit-matrix__cell.is-on:hover { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+.unit-drill {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: var(--surface-alt);
+}
+.unit-drill__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+.unit-drill__close {
+    border: none;
+    background: var(--border);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+.unit-drill__close:hover { background: var(--border-strong); }
+.unit-drill__steps { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+.unit-drill__step {
+    font-size: 0.76rem;
+    color: var(--text-soft);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-left: 10px;
+}
+.unit-drill__step span { white-space: nowrap; }
+
 .meal-accordion-header__meta {
     display: flex;
     align-items: center;
@@ -10034,6 +10127,39 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
 
 .machine-pill strong {
     font-weight: 700;
+}
+
+/* Clickable unit pills in the machine-utilisation drill-down */
+.machine-unit-pill {
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.machine-unit-pill:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+.machine-unit-pill.is-active {
+    background: var(--blue, #2563eb);
+    border-color: var(--blue, #2563eb);
+    color: #fff;
+}
+.machine-unit-pill.is-active strong { color: #fff; }
+.machine-unit-detail {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.machine-unit-detail__head {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-bottom: 2px;
 }
 
 /* ── Cooking analysis: KPI strip, stage badges, sort bar ───────────────────── */
@@ -10619,3 +10745,56 @@ body[data-page="inbound-tracking"] .inb-stock-card__canvas-wrap {
 .cat--other   { background: #f0f0f0; color: #555; }
 .cat-chip.cat--protein, .cat-chip.cat--veg, .cat-chip.cat--starch,
 .cat-chip.cat--dairy, .cat-chip.cat--sauce, .cat-chip.cat--other { border: none; }
+
+/* ── Production planner: simulation ──────────────────────────────────────── */
+.sim-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(280px, 1.2fr);
+    gap: 18px;
+    align-items: start;
+}
+@media (max-width: 760px) { .sim-grid { grid-template-columns: 1fr; } }
+.sim-staff {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: 10px;
+}
+.sim-staff input,
+.sim-units, .sim-avail {
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    padding: 5px 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: var(--text);
+    width: 64px;
+    text-align: center;
+}
+.sim-staff input:focus,
+.sim-units:focus, .sim-avail:focus { outline: none; border-color: var(--primary); }
+.sim-units, .sim-avail { width: 56px; }
+.sim-pct { color: var(--text-soft); font-size: 0.8rem; margin-left: 2px; }
+
+.sim-headline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.sim-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: 9px;
+}
+.sim-kpi span { font-size: 0.72rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+.sim-kpi strong { font-size: 1.15rem; color: var(--text); line-height: 1.1; }
+.sim-kpi small { font-size: 0.72rem; color: var(--text-soft); }

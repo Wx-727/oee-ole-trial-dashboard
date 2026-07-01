@@ -3,6 +3,12 @@
     const accordion    = document.getElementById("mealAccordion");
     const summaryCard  = document.getElementById("machineSummaryCard");
     const summaryGrid  = document.getElementById("machineSummaryGrid");
+    const unitUsageCard   = document.getElementById("unitUsageCard");
+    const unitUsageHeader = document.getElementById("unitUsageHeader");
+    const unitUsageBody   = document.getElementById("unitUsageBody");
+    const unitUsageMatrix = document.getElementById("unitUsageMatrix");
+    const unitUsageDrill  = document.getElementById("unitUsageDrill");
+    const unitUsageHint   = document.getElementById("unitUsageHint");
     const scopeNote    = document.getElementById("cookingScopeNote");
     const loadState    = document.getElementById("cookingLoadState");
     const kpiStrip     = document.getElementById("cookingKpiStrip");
@@ -26,6 +32,7 @@
 
     let allTasks   = [];   // per (date, menu, step) rows from the API
     let dateLabels = {};
+    let currentUnitUsage = null;   // unit -> day -> menu/step, for the current scope
 
     // ── Data-quality state ───────────────────────────────────────────────────
     let allFlags     = [];     // flag objects from /api/lr-data-quality
@@ -251,6 +258,21 @@
                 if (!built && !open) {
                     detail.insertAdjacentHTML("beforeend", renderTypeDetail(td));
                     built = true;
+                    const udetail = detail.querySelector(".machine-unit-detail");
+                    detail.querySelectorAll(".machine-unit-pill").forEach((btn) => {
+                        btn.addEventListener("click", function (e) {
+                            e.stopPropagation();
+                            const active = btn.classList.contains("is-active");
+                            detail.querySelectorAll(".machine-unit-pill").forEach((b) => b.classList.remove("is-active"));
+                            if (active) {
+                                udetail.hidden = true;
+                            } else {
+                                btn.classList.add("is-active");
+                                udetail.innerHTML = unitDetailHtml(btn.dataset.unit);
+                                udetail.hidden = false;
+                            }
+                        });
+                    });
                 }
             }
 
@@ -271,8 +293,8 @@
         const unitHtml = unitNames.length > 1
             ? `<div class="machine-type-units">${
                 Object.entries(td.units).sort((a, b) => b[1] - a[1]).map(([n, m]) =>
-                    `<span class="machine-pill">${esc(n)} <strong>${fmtMin(m)}</strong></span>`).join(" ")
-              }</div>`
+                    `<button type="button" class="machine-pill machine-unit-pill" data-unit="${esc(n)}">${esc(n)} <strong>${fmtMin(m)}</strong></button>`).join(" ")
+              }</div><div class="machine-unit-detail" hidden></div>`
             : "";
 
         const menuHtml = Object.entries(td.menus)
@@ -293,6 +315,165 @@
             }).join("");
 
         return unitHtml + menuHtml;
+    }
+
+    // ── Unit-level usage (each individual machine unit × day × menu) ────────────
+
+    function buildUnitUsage(tasks) {
+        const units = {};
+        const dateSet = {};
+        let maxCell = 0;
+        tasks.forEach((t) => {
+            if (t.date) dateSet[t.date] = true;
+            Object.entries(t.machines || {}).forEach(([name, v]) => {
+                const mins = Number(v.minutes || 0);
+                if (mins <= 0) return;
+                const u = units[name] || (units[name] = { total: 0, days: {} });
+                u.total += mins;
+                const day = u.days[t.date] || (u.days[t.date] = { total: 0, menus: {} });
+                day.total += mins;
+                const menu = day.menus[t.menu] || (day.menus[t.menu] = { minutes: 0, batches: 0, steps: {} });
+                menu.minutes += mins;
+                menu.batches += Number(v.batches || 0);
+                const st = menu.steps[t.step] || (menu.steps[t.step] = { minutes: 0, batches: 0 });
+                st.minutes += mins;
+                st.batches += Number(v.batches || 0);
+                if (day.total > maxCell) maxCell = day.total;
+            });
+        });
+        return { units, dates: Object.keys(dateSet).sort(), maxCell };
+    }
+
+    function unitNumber(name) {
+        const m = /(\d+)\s*$/.exec(name);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+
+    function sortedUnits(usage) {
+        const names = Object.keys(usage.units);
+        const typeTotal = {};
+        names.forEach((n) => {
+            const tp = machineType(n);
+            typeTotal[tp] = (typeTotal[tp] || 0) + usage.units[n].total;
+        });
+        return names.sort((a, b) => {
+            const ta = machineType(a), tb = machineType(b);
+            if (ta !== tb) return (typeTotal[tb] - typeTotal[ta]) || ta.localeCompare(tb);
+            return unitNumber(a) - unitNumber(b) || a.localeCompare(b);
+        });
+    }
+
+    function renderUnitMatrix(usage) {
+        const units = sortedUnits(usage);
+        const dates = usage.dates;
+        const showTotal = dates.length > 1;
+        const maxH = usage.maxCell / 60 || 1;
+
+        const head = `<th class="unit-matrix__corner">Unit</th>` +
+            dates.map((d) => {
+                const day = parseInt(d.slice(8, 10), 10);
+                return `<th class="unit-matrix__day" title="${esc(dateLabels[d] || d)}">${day}</th>`;
+            }).join("") +
+            (showTotal ? `<th class="unit-matrix__total">Total</th>` : "");
+
+        let lastType = null;
+        const colspan = dates.length + 1 + (showTotal ? 1 : 0);
+        const rows = units.map((u) => {
+            const type = machineType(u);
+            let groupRow = "";
+            if (type !== lastType) {
+                groupRow = `<tr class="unit-matrix__grouprow"><td colspan="${colspan}">${esc(type)}</td></tr>`;
+                lastType = type;
+            }
+            const ud = usage.units[u];
+            const cells = dates.map((d) => {
+                const day = ud.days[d];
+                if (day && day.total > 0) {
+                    const h = day.total / 60;
+                    const alpha = Math.min(1, h / maxH);
+                    const dark = alpha > 0.55 ? " is-dark" : "";
+                    return `<td class="unit-matrix__cell is-on${dark}" data-unit="${esc(u)}" data-date="${esc(d)}" ` +
+                        `style="background:rgba(37,99,235,${alpha.toFixed(2)})" ` +
+                        `title="${esc(u)} · ${esc(dateLabels[d] || d)}: ${h.toFixed(1)}h">${h.toFixed(1)}</td>`;
+                }
+                return `<td class="unit-matrix__cell"></td>`;
+            }).join("");
+            const totalCell = showTotal ? `<td class="unit-matrix__total">${(ud.total / 60).toFixed(1)}h</td>` : "";
+            return `${groupRow}<tr><td class="unit-matrix__unit">${esc(u)}</td>${cells}${totalCell}</tr>`;
+        }).join("");
+
+        return `<div class="unit-matrix-wrap"><table class="unit-matrix"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+
+    function showUnitDrill(usage, unit, dateIso) {
+        const day = usage.units[unit] && usage.units[unit].days[dateIso];
+        if (!day) { unitUsageDrill.hidden = true; return; }
+        const menus = Object.entries(day.menus).sort((a, b) => b[1].minutes - a[1].minutes);
+        const rows = menus.map(([menu, m]) => {
+            const steps = Object.entries(m.steps)
+                .sort((a, b) => b[1].minutes - a[1].minutes)
+                .map(([s, sv]) => `<div class="unit-drill__step">${esc(s)}<span>${fmtMin(sv.minutes)}${sv.batches ? ` · ${sv.batches} batch${sv.batches !== 1 ? "es" : ""}` : ""}</span></div>`)
+                .join("");
+            return `<tr><td>${esc(menu)}<div class="unit-drill__steps">${steps}</div></td>` +
+                `<td class="col-center">${fmtMin(m.minutes)}</td><td class="col-center">${m.batches || "—"}</td></tr>`;
+        }).join("");
+        unitUsageDrill.innerHTML =
+            `<div class="unit-drill__head"><span><strong>${esc(unit)}</strong> · ${esc(dateLabels[dateIso] || dateIso)} · ${fmtMin(day.total)}</span>` +
+            `<button type="button" class="unit-drill__close" aria-label="Close">&times;</button></div>` +
+            `<div class="meal-step-table-wrap"><table class="meal-step-table"><thead><tr><th>Menu</th>` +
+            `<th class="col-center">Time</th><th class="col-center">Batches</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        unitUsageDrill.hidden = false;
+        unitUsageDrill.querySelector(".unit-drill__close")
+            .addEventListener("click", () => { unitUsageDrill.hidden = true; });
+        unitUsageDrill.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // Per-unit detail (by day → menus), reused by the machine-summary unit pills.
+    function unitDetailHtml(unitName) {
+        const u = currentUnitUsage && currentUnitUsage.units[unitName];
+        if (!u) return "<p class='card__helper' style='margin:8px 0 0'>No usage in this period.</p>";
+        const days = Object.entries(u.days).sort((a, b) => a[0].localeCompare(b[0]));
+        const rows = days.map(([iso, day]) => {
+            const menus = Object.entries(day.menus)
+                .sort((a, b) => b[1].minutes - a[1].minutes)
+                .map(([menu, m]) => `<span class="machine-pill">${esc(menu)} <strong>${fmtMin(m.minutes)}</strong></span>`)
+                .join(" ");
+            return `<div class="machine-type-menu">
+                    <div class="machine-type-menu__head">
+                        <span class="machine-type-menu__name">${esc(dateLabels[iso] || iso)}</span>
+                        <span class="machine-type-menu__time">${fmtMin(day.total)}</span>
+                    </div>
+                    <div class="machine-type-menu__steps">${menus}</div>
+                </div>`;
+        }).join("");
+        return `<div class="machine-unit-detail__head">${esc(unitName)} — ${fmtMin(u.total)} across ${days.length} day${days.length !== 1 ? "s" : ""}</div>${rows}`;
+    }
+
+    function renderUnitUsage(usage) {
+        if (!unitUsageCard) return;
+        if (!usage || !Object.keys(usage.units).length) { unitUsageCard.style.display = "none"; return; }
+        unitUsageCard.style.display = "";
+        unitUsageMatrix.innerHTML = renderUnitMatrix(usage);
+        unitUsageDrill.hidden = true;
+        unitUsageHint.textContent = usage.dates.length > 1
+            ? "Hours each unit ran per day (darker = busier). Click a cell to see the menus that unit produced that day."
+            : "Hours each unit ran on the selected day. Click a cell to see the menus.";
+        unitUsageMatrix.querySelectorAll(".unit-matrix__cell.is-on").forEach((cell) => {
+            cell.addEventListener("click", () => showUnitDrill(usage, cell.dataset.unit, cell.dataset.date));
+        });
+    }
+
+    function toggleUnitUsage() {
+        if (!unitUsageBody) return;
+        const open = !unitUsageBody.hidden;
+        unitUsageBody.hidden = open;
+        unitUsageCard.classList.toggle("unit-usage-card--open", !open);
+    }
+    if (unitUsageHeader) {
+        unitUsageHeader.addEventListener("click", toggleUnitUsage);
+        unitUsageHeader.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleUnitUsage(); }
+        });
     }
 
     // ── Step detail table ──────────────────────────────────────────────────────
@@ -528,9 +709,22 @@
         const busiest = Object.entries(machineMin).sort((a, b) => b[1] - a[1])[0];
         const avgEff = kgPerManHr(totalKg, manMinutes);
 
+        // Total meals assembled for the menus in scope (from the HR report),
+        // de-duplicated by HR product so menus sharing one product aren't double-counted.
+        let totalMeals = 0, hasMeals = false;
+        const seenProducts = {};
+        new Set(tasks.map((t) => t.menu)).forEach((menu) => {
+            const info = mealsByMenu[menu];
+            if (info && !seenProducts[info.hr_product]) {
+                seenProducts[info.hr_product] = true;
+                totalMeals += info.meals;
+                hasMeals = true;
+            }
+        });
+
         const cards = [
             ["Total Output", fmtKg(totalKg), ""],
-            ["Total Batches", totalBatches.toLocaleString("en"), ""],
+            ["Total Meals", hasMeals ? fmtMeals(totalMeals) : "—", "assembled (HR)"],
             ["Labour", `${manHours.toLocaleString("en", { maximumFractionDigits: 0 })} man-hr`, ""],
             ["Avg Efficiency", avgEff ? `${fmtEff(avgEff)} kg/man-hr` : "—", ""],
             ["Equipment Used", `${Object.keys(machineMin).length} machines`, ""],
@@ -582,8 +776,10 @@
             scopeNote.textContent =
                 `${scopeLabel} — ${currentMenus.length} menu item${currentMenus.length !== 1 ? "s" : ""}, ${fmtKg(totalKg)} total output.`;
         }
+        currentUnitUsage = buildUnitUsage(tasks);
         renderKpiStrip(tasks);
         renderMachineSummary(tasks);
+        renderUnitUsage(currentUnitUsage);
         if (sortBar) sortBar.style.display = currentMenus.length ? "" : "none";
         renderMenuList();
     }
@@ -651,10 +847,17 @@
             b.addEventListener("click", () => { dqStatus = b.dataset.status; renderDqFilters(); renderDqList(); });
         });
 
+        // Category counts reflect the current status filter (so "Confirmed" shows
+        // how many of each category are confirmed, etc.).
+        const statusFiltered = dqStatus === "__ALL__"
+            ? allFlags
+            : allFlags.filter((f) => (f.status || "pending") === dqStatus);
+        const catCounts = {};
+        statusFiltered.forEach((f) => { catCounts[f.category] = (catCounts[f.category] || 0) + 1; });
         const cats = Object.keys((flagSummary && flagSummary.by_category) || {}).sort();
         dqCategoryFilter.innerHTML =
-            `<option value="__ALL__">All categories</option>` +
-            cats.map((c) => `<option value="${esc(c)}"${dqCategory === c ? " selected" : ""}>${esc(c)}</option>`).join("");
+            `<option value="__ALL__">All categories (${statusFiltered.length})</option>` +
+            cats.map((c) => `<option value="${esc(c)}"${dqCategory === c ? " selected" : ""}>${esc(c)} (${catCounts[c] || 0})</option>`).join("");
         dqCategoryFilter.onchange = function () { dqCategory = this.value; renderDqList(); };
     }
 
@@ -771,6 +974,7 @@
                 if (data.error || !data.menus) return;
                 mealsByMenu = data.menus;
                 renderMenuList();   // re-render cards with meals once known
+                renderKpiStrip(tasksForScope(dateSelector.value));   // fill the Total Meals card
             })
             .catch(function () { /* meals are supplementary; ignore */ });
     }
